@@ -91,7 +91,12 @@ protocol StorageManaging: Sendable {
   func nextScreenshotURL() -> URL
 
   /// Save a screenshot to the database, returns the screenshot ID
-  func saveScreenshot(url: URL, capturedAt: Date, idleSecondsAtCapture: Int?) -> Int64?
+  func saveScreenshot(
+    url: URL,
+    capturedAt: Date,
+    idleSecondsAtCapture: Int?,
+    metadata: ActivityMetadata
+  ) -> Int64?
 
   /// Fetch screenshots that haven't been assigned to a batch yet
   func fetchUnprocessedScreenshots(since oldestTimestamp: Int) -> [Screenshot]

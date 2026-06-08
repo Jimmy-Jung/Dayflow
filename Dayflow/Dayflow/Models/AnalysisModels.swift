@@ -29,6 +29,42 @@ struct Screenshot: Codable, Sendable {
   let idleSecondsAtCapture: Int?
   let isDeleted: Bool
 
+  // Activity metadata (Phase 1, HANDOFF/12). Nullable — absent for historical rows
+  // and for redacted (privacy-blocked) captures.
+  let activeAppName: String?
+  let bundleId: String?
+  let windowTitle: String?
+  let displayId: Int?
+  let privacyState: String?  // "normal" | "redacted"
+
+  /// Explicit initializer with defaults for the metadata fields so existing
+  /// call sites (e.g. VideoProcessingService URL fallback) remain valid.
+  init(
+    id: Int64,
+    capturedAt: Int,
+    filePath: String,
+    fileSize: Int64?,
+    idleSecondsAtCapture: Int?,
+    isDeleted: Bool,
+    activeAppName: String? = nil,
+    bundleId: String? = nil,
+    windowTitle: String? = nil,
+    displayId: Int? = nil,
+    privacyState: String? = nil
+  ) {
+    self.id = id
+    self.capturedAt = capturedAt
+    self.filePath = filePath
+    self.fileSize = fileSize
+    self.idleSecondsAtCapture = idleSecondsAtCapture
+    self.isDeleted = isDeleted
+    self.activeAppName = activeAppName
+    self.bundleId = bundleId
+    self.windowTitle = windowTitle
+    self.displayId = displayId
+    self.privacyState = privacyState
+  }
+
   var fileURL: URL {
     URL(fileURLWithPath: filePath)
   }

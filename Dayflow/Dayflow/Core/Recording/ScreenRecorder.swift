@@ -351,6 +351,13 @@ final class ScreenRecorder: NSObject, @unchecked Sendable {
     let captureTime = Date()
     let idleSecondsAtCapture = InputIdleSnapshot.currentIdleSeconds()
 
+    // Collect activity metadata once (frontmost app / window title / display).
+    // The collector applies privacy redaction internally for blocked apps.
+    let displayIDForMetadata = currentDisplayID
+    let metadata = await MainActor.run {
+      ActivityMetadataCollector.collect(displayID: displayIDForMetadata)
+    }
+
     do {
       let captureSize = scaledCaptureSize(for: display)
       if let blockedApplication = await MainActor.run(body: {
@@ -370,7 +377,8 @@ final class ScreenRecorder: NSObject, @unchecked Sendable {
         _ = try saveScreenshotData(
           jpegData,
           capturedAt: captureTime,
-          idleSecondsAtCapture: idleSecondsAtCapture
+          idleSecondsAtCapture: idleSecondsAtCapture,
+          metadata: metadata
         )
         dbg("🔒 Screenshot redacted for blocked foreground application")
         return
@@ -413,7 +421,8 @@ final class ScreenRecorder: NSObject, @unchecked Sendable {
       let fileURL = try saveScreenshotData(
         jpegData,
         capturedAt: captureTime,
-        idleSecondsAtCapture: idleSecondsAtCapture
+        idleSecondsAtCapture: idleSecondsAtCapture,
+        metadata: metadata
       )
 
       dbg("📸 Screenshot saved: \(fileURL.lastPathComponent) (\(jpegData.count / 1024)KB)")
@@ -446,7 +455,8 @@ final class ScreenRecorder: NSObject, @unchecked Sendable {
   private func saveScreenshotData(
     _ jpegData: Data,
     capturedAt: Date,
-    idleSecondsAtCapture: Int?
+    idleSecondsAtCapture: Int?,
+    metadata: ActivityMetadata
   ) throws -> URL {
     let fileURL = StorageManager.shared.nextScreenshotURL()
     try jpegData.write(to: fileURL)
@@ -454,7 +464,8 @@ final class ScreenRecorder: NSObject, @unchecked Sendable {
     _ = StorageManager.shared.saveScreenshot(
       url: fileURL,
       capturedAt: capturedAt,
-      idleSecondsAtCapture: idleSecondsAtCapture
+      idleSecondsAtCapture: idleSecondsAtCapture,
+      metadata: metadata
     )
     return fileURL
   }

@@ -683,6 +683,21 @@ final class StorageManager: StorageManaging, @unchecked Sendable {
         print("✅ Added idle_seconds_at_capture column to screenshots")
       }
 
+      // Phase 1 activity metadata columns (HANDOFF/12). All nullable so existing
+      // rows and the redacted (privacy-blocked) path remain valid.
+      let activityMetadataColumns: [(name: String, type: String)] = [
+        ("active_app_name", "TEXT"),
+        ("bundle_id", "TEXT"),
+        ("window_title", "TEXT"),
+        ("display_id", "INTEGER"),
+        ("privacy_state", "TEXT"),
+      ]
+      for column in activityMetadataColumns where !screenshotColumns.contains(column.name) {
+        try db.execute(
+          sql: "ALTER TABLE screenshots ADD COLUMN \(column.name) \(column.type);")
+        print("✅ Added \(column.name) column to screenshots")
+      }
+
       let dayGoalColumns = try db.columns(in: "day_goals").map { $0.name }
       if !dayGoalColumns.contains("is_skipped") {
         try db.execute(
