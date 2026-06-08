@@ -300,8 +300,14 @@ struct PausePillView: View {
   }
 
   private func startRecordingFromResumePill() {
+    // Gate on screen-recording permission before advancing the pill. Without this
+    // the pill would animate to its recording state while RecordingControl.start
+    // silently no-ops, leaving the UI out of sync with the real recording state.
+    guard RecordingControl.startFromUser(
+      reason: "user_main_app", noticeReason: "start_pill")
+    else { return }
+
     phase = .idle
-    RecordingControl.start(reason: "user_main_app")
     animatePausedToIdle()
   }
 
@@ -381,8 +387,14 @@ struct PausePillView: View {
   // MARK: - Paused → Idle
 
   private func resumeFromPause() {
+    // Gate on screen-recording permission. If it is missing the helper surfaces
+    // the permission notice and returns false; keep the pill paused so the user
+    // sees recording did not actually resume.
+    guard RecordingControl.resumeFromPause(
+      source: .userClickedMainApp, noticeReason: "resume_pill")
+    else { return }
+
     phase = .idle
-    pauseManager.resume(source: .userClickedMainApp)
     animatePausedToIdle()
   }
 

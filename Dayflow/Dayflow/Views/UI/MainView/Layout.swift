@@ -243,6 +243,7 @@ extension MainView {
     if showScreenRecordingPermissionNotice {
       ScreenRecordingPermissionNoticeView(
         onOpenSettings: handleScreenRecordingPermissionNoticeOpenSettings,
+        onRestart: handleScreenRecordingPermissionNoticeRestart,
         onDismiss: handleScreenRecordingPermissionNoticeDismiss
       )
       .padding(.trailing, 24)
@@ -417,16 +418,24 @@ extension MainView {
   }
 
   private func handleShowScreenRecordingPermissionNoticeNotification(_ notification: Notification) {
-    showScreenRecordingNoticeIfNeeded()
+    let force = (notification.userInfo?["force"] as? Bool) ?? false
+    showScreenRecordingNoticeIfNeeded(force: force)
   }
 
-  private func showScreenRecordingNoticeIfNeeded() {
-    guard !didDismissScreenRecordingPermissionNoticeThisSession else { return }
+  private func showScreenRecordingNoticeIfNeeded(force: Bool = false) {
     guard !ScreenRecordingPermissionNotice.isGranted else {
       showScreenRecordingPermissionNotice = false
       return
     }
-    guard AppState.shared.getSavedPreference() == true || appState.isRecording else { return }
+
+    // Forced requests come from an explicit user action (e.g. tapping Resume),
+    // so they override the session-dismiss latch and the saved-preference gate.
+    if force {
+      didDismissScreenRecordingPermissionNoticeThisSession = false
+    } else {
+      guard !didDismissScreenRecordingPermissionNoticeThisSession else { return }
+      guard AppState.shared.getSavedPreference() == true || appState.isRecording else { return }
+    }
 
     withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
       showScreenRecordingPermissionNotice = true
@@ -476,6 +485,11 @@ extension MainView {
       showScreenRecordingPermissionNotice = false
     }
     ScreenRecordingPermissionNotice.openSystemSettings()
+  }
+
+  private func handleScreenRecordingPermissionNoticeRestart() {
+    AnalyticsService.shared.capture("screen_permission_notice_clicked_restart")
+    ScreenRecordingPermissionNotice.relaunch()
   }
 
   private func handleScreenRecordingPermissionNoticeDismiss() {
@@ -1491,6 +1505,7 @@ private struct TimelineFailureToastView: View {
 
 private struct ScreenRecordingPermissionNoticeView: View {
   let onOpenSettings: () -> Void
+  let onRestart: () -> Void
   let onDismiss: () -> Void
 
   var body: some View {
@@ -1507,10 +1522,12 @@ private struct ScreenRecordingPermissionNoticeView: View {
             .fontWeight(.semibold)
             .foregroundColor(.black.opacity(0.86))
 
-          Text("Dayflow cannot update your timeline until access is restored.")
-            .font(.custom("Figtree", size: 12))
-            .foregroundColor(.black.opacity(0.62))
-            .fixedSize(horizontal: false, vertical: true)
+          Text(
+            "Enable Dayflow under Screen Recording, then restart the app to apply it."
+          )
+          .font(.custom("Figtree", size: 12))
+          .foregroundColor(.black.opacity(0.62))
+          .fixedSize(horizontal: false, vertical: true)
         }
 
         Button(action: onDismiss) {
@@ -1524,25 +1541,47 @@ private struct ScreenRecordingPermissionNoticeView: View {
         .pointingHandCursorOnHover(reassertOnPressEnd: true)
       }
 
-      DayflowSurfaceButton(
-        action: onOpenSettings,
-        content: {
-          HStack(spacing: 6) {
-            Image(systemName: "gearshape")
-              .font(.system(size: 12))
-            Text("Open System Settings")
-              .font(.custom("Figtree", size: 12))
-              .fontWeight(.semibold)
-          }
-        },
-        background: Color(red: 0.25, green: 0.17, blue: 0),
-        foreground: .white,
-        borderColor: .clear,
-        cornerRadius: 8,
-        horizontalPadding: 14,
-        verticalPadding: 8,
-        showOverlayStroke: true
-      )
+      HStack(spacing: 8) {
+        DayflowSurfaceButton(
+          action: onOpenSettings,
+          content: {
+            HStack(spacing: 6) {
+              Image(systemName: "gearshape")
+                .font(.system(size: 12))
+              Text("Open System Settings")
+                .font(.custom("Figtree", size: 12))
+                .fontWeight(.semibold)
+            }
+          },
+          background: Color(red: 0.25, green: 0.17, blue: 0),
+          foreground: .white,
+          borderColor: .clear,
+          cornerRadius: 8,
+          horizontalPadding: 14,
+          verticalPadding: 8,
+          showOverlayStroke: true
+        )
+
+        DayflowSurfaceButton(
+          action: onRestart,
+          content: {
+            HStack(spacing: 6) {
+              Image(systemName: "arrow.clockwise")
+                .font(.system(size: 12))
+              Text("Restart Dayflow")
+                .font(.custom("Figtree", size: 12))
+                .fontWeight(.semibold)
+            }
+          },
+          background: Color.white.opacity(0.0),
+          foreground: Color(red: 0.25, green: 0.17, blue: 0),
+          borderColor: Color(hex: "F3D9C2"),
+          cornerRadius: 8,
+          horizontalPadding: 14,
+          verticalPadding: 8,
+          showOverlayStroke: false
+        )
+      }
     }
     .padding(14)
     .frame(width: 360, alignment: .leading)

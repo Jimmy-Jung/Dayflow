@@ -52,6 +52,39 @@ enum RecordingControl {
     AppState.shared.setRecording(false, analyticsReason: reason)
   }
 
+  /// Resumes recording from a paused state in response to an explicit user action.
+  /// Verifies screen-recording permission first; if it is missing, the resume is
+  /// blocked and the permission notice is surfaced (forced) so the user can jump
+  /// to System Settings instead of silently failing to capture.
+  /// - Returns: `true` if recording resumed, `false` if blocked by missing permission.
+  @discardableResult
+  static func resumeFromPause(source: ResumeSource, noticeReason: String) -> Bool {
+    guard ScreenRecordingPermissionNotice.isGranted else {
+      ScreenRecordingPermissionNotice.post(reason: noticeReason, force: true)
+      return false
+    }
+
+    PauseManager.shared.resume(source: source)
+    return true
+  }
+
+  /// Starts recording in response to an explicit user action (a Resume/Start tap).
+  /// Performs a synchronous permission preflight so the caller can decide, in the
+  /// same run loop turn, whether to advance its UI. If permission is missing the
+  /// start is blocked and the permission notice is surfaced (forced); the caller
+  /// must keep its UI in the not-recording state.
+  /// - Returns: `true` if the start was dispatched, `false` if blocked.
+  @discardableResult
+  static func startFromUser(reason: String, noticeReason: String) -> Bool {
+    guard ScreenRecordingPermissionNotice.isGranted else {
+      ScreenRecordingPermissionNotice.post(reason: noticeReason, force: true)
+      return false
+    }
+
+    start(reason: reason)
+    return true
+  }
+
   private static func hasScreenRecordingPermission() async -> Bool {
     guard CGPreflightScreenCaptureAccess() else { return false }
 

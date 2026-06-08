@@ -43,10 +43,21 @@ struct StatusMenuView: View {
   }
 
   private func resumeRecording() {
-    if pauseManager.isPaused {
-      pauseManager.resume(source: .userClickedMenuBar)
-    } else {
-      RecordingControl.start(reason: "user_menu_bar")
+    let resumed =
+      pauseManager.isPaused
+      ? RecordingControl.resumeFromPause(
+        source: .userClickedMenuBar, noticeReason: "resume_menu_bar")
+      : RecordingControl.startFromUser(
+        reason: "user_menu_bar", noticeReason: "resume_menu_bar")
+
+    guard !resumed else { return }
+
+    // Permission is missing. The notice overlay lives in the main window, which
+    // may be closed in menu-bar-only mode, so open it and re-post the (forced)
+    // notice once the view has had a moment to mount and subscribe.
+    openDayflow()
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+      ScreenRecordingPermissionNotice.post(reason: "resume_menu_bar", force: true)
     }
   }
 
