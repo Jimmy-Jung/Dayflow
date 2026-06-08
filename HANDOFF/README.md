@@ -68,6 +68,8 @@ flowchart TD
 | 09 | [시스템 / 릴리스](09-system-release.md) | 상태바, 권한, 분석, Sparkle 업데이트, 릴리스 스크립트 |
 | 10 | [레시피 & FAQ](10-recipes-faq.md) | 자주 하는 작업 how-to + 트러블슈팅 |
 | 11 | [다국어 / 한글](11-localization.md) | String Catalog 기반 i18n, 한글 추가·확장 방법 |
+| 12 | [스크린샷 분석 고도화](12-screenshot-analysis-enhancement.md) | 스크린샷 유지 + 메타데이터/OCR/keyframe/개인화로 정확도·성능 개선 |
+| 13 | [CloudKit 동기화 설계](13-cloud-sync.md) | 멀티 디바이스 iCloud 동기화 **설계안**(CKSyncEngine, 스키마·충돌·단계별 계획) |
 | — | [용어집](glossary.md) | 주니어용 핵심 용어 풀이 |
 
 ---
