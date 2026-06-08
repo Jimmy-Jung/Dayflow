@@ -18,7 +18,8 @@ extension GeminiDirectProvider {
     videoDuration: TimeInterval,
     realDuration: TimeInterval,
     compressionFactor: TimeInterval,
-    batchId: Int64?
+    batchId: Int64?,
+    metadataTimeline: String? = nil
   ) async throws -> (observations: [Observation], log: LLMCall) {
     let callStart = Date()
 
@@ -37,11 +38,33 @@ extension GeminiDirectProvider {
 
     // realDuration is available via compressionFactor if needed for debugging
 
+    // Optional on-device metadata block (Phase 1, HANDOFF/12). Additive context only —
+    // it does not change the video or the timestamp math.
+    //
+    // The metadata lines carry real-world CLOCK times, which use a DIFFERENT coordinate
+    // system than the video. We wrap them with an explicit warning so the model does not
+    // copy clock times into its MM:SS-relative output (which would fail validation).
+    let metadataSection: String = {
+      guard let metadataTimeline, !metadataTimeline.isEmpty else { return "" }
+      return """
+
+        --- Supporting metadata (DO NOT copy these timestamps) ---
+        The lines below are real-world clock times captured on-device, for context only.
+        They are NOT video timestamps. Your output timestamps MUST stay in MM:SS relative
+        to the video (00:00 to \(durationString)). Use this only to disambiguate app/file
+        names and detect continued vs. switched activity.
+        \(metadataTimeline)
+        --- End supporting metadata ---
+
+        """
+    }()
+
     let finalTranscriptionPrompt = """
       Screen Recording Transcription (Reconstruct Mode)
       Watch this screen recording and create an activity log detailed enough that someone could reconstruct the session.
       CRITICAL: This video is exactly \(durationString) long. ALL timestamps must be within 00:00 to \(durationString). No gaps.
       Identifying the active app: On macOS, the app name is always shown in the top-left corner of the screen, right next to the Apple () menu. Check this FIRST to identify which app is being used. Do NOT guess — read the actual name from the menu bar. If you can't read it clearly, describe it generically (e.g., "code editor," "browser," "messaging app") rather than guessing a specific product name. Common code editors like Cursor, VS Code, Xcode, and Zed all look similar but have different names in the menu bar.
+      \(metadataSection)
       For each segment, ask yourself:
       "What EXACTLY did they do? What SPECIFIC things can I see?"
       Capture:
@@ -699,6 +722,9 @@ extension GeminiDirectProvider {
       "[Gemini] 📹 Composited \(screenshots.count) screenshots into compressed video (\(videoData.count / 1024)KB)"
     )
 
+    // Build optional on-device metadata timeline (additive context; does not alter frames).
+    let metadataTimeline = EvidenceTimelineFormatter.timelineText(for: sortedScreenshots)
+
     // Transcribe the composited video with compression info
     return try await transcribeVideoData(
       videoData,
@@ -707,7 +733,8 @@ extension GeminiDirectProvider {
       videoDuration: compressedVideoDuration,
       realDuration: realDuration,
       compressionFactor: compressionFactor,
-      batchId: batchId
+      batchId: batchId,
+      metadataTimeline: metadataTimeline
     )
   }
 
