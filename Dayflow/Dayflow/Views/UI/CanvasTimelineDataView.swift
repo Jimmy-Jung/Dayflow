@@ -1378,6 +1378,44 @@ struct CanvasActivityCard: View {
                 .truncationMode(.tail)
             }
           }
+        } else {
+          // Short cards (< 10 min): single-line layout — icon + title + time.
+          if showTimelineAppIcons && (faviconPrimaryRaw != nil || faviconSecondaryRaw != nil) {
+            FaviconImageView(
+              primaryRaw: faviconPrimaryRaw,
+              secondaryRaw: faviconSecondaryRaw,
+              primaryHost: faviconPrimaryHost,
+              secondaryHost: faviconSecondaryHost,
+              size: faviconSize
+            )
+            .offset(y: faviconVerticalOffset)
+          }
+
+          Text(title)
+            .font(
+              Font.custom("Figtree", size: fontSize)
+                .weight(fontWeight.fontWeight)
+            )
+            .foregroundColor(style.text)
+            .lineLimit(1)
+            .truncationMode(.tail)
+
+          Spacer(minLength: 8)
+
+          HStack(spacing: 6) {
+            if isBackupGenerated {
+              backupIndicator
+            }
+
+            Text(time)
+              .font(
+                Font.custom("Figtree", size: secondaryFontSize)
+                  .weight(.medium)
+              )
+              .foregroundColor(style.time)
+              .lineLimit(1)
+              .truncationMode(.tail)
+          }
         }
       }
       .padding(.leading, iconLeadingInset)
