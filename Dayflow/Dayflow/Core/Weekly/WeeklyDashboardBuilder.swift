@@ -486,9 +486,9 @@ enum WeeklyDashboardBuilder {
     }
 
     return WeeklyFocusHeatmapSnapshot(
-      title: "Focus and distraction heat map",
-      focusedLabel: "Focused work",
-      distractedLabel: "Distracted",
+      title: String(localized: "Focus and distraction heat map"),
+      focusedLabel: String(localized: "Focused work"),
+      distractedLabel: String(localized: "Distracted"),
       startMinute: visibleWindow.start,
       endMinute: visibleWindow.start + (Double(bucketCount) * bucketMinutes),
       bucketMinutes: bucketMinutes,
