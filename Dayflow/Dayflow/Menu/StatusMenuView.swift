@@ -130,7 +130,7 @@ private struct PauseSection: View {
 private struct DurationPicker: View {
   let onSelect: (PauseDuration) -> Void
 
-  private let options: [(label: String, duration: PauseDuration)] = [
+  private let options: [(label: LocalizedStringKey, duration: PauseDuration)] = [
     ("15 Min", .minutes15),
     ("30 Min", .minutes30),
     ("1 Hour", .hour1),
@@ -164,7 +164,7 @@ private struct DurationPicker: View {
 }
 
 private struct DurationOption: View {
-  let label: String
+  let label: LocalizedStringKey
   let isFirst: Bool
   let isLast: Bool
   let onTap: () -> Void
@@ -245,7 +245,7 @@ private struct CountdownBadge: View {
 // MARK: - Menu Row
 
 private struct MenuRow: View {
-  let title: String
+  let title: LocalizedStringKey
   var systemImage: String? = nil
   var assetImage: String? = nil
   var accent: Color = .primary
