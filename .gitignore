@@ -28,3 +28,9 @@ tools/
 # Eval frameworks
 claudeeval/
 codexeval/
+
+# Debug logs & local tool artifacts
+firebase-debug.log
+firebase-debug.*.log
+*.mcp_traffic.db
+mitm_mcp_traffic.db
