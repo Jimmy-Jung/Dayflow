@@ -52,7 +52,7 @@ struct SettingsRecordingPrivacyTabView: View {
             .font(.custom("Figtree", size: 13))
             .fontWeight(.semibold)
             .foregroundColor(SettingsStyle.text)
-          Text("활성 탭의 도메인(host)만 저장하며 경로·쿼리는 항상 제외합니다. 일부 브라우저에서만 동작합니다.")
+          Text("활성 탭의 도메인(host)만 저장하며 경로·쿼리는 항상 제외합니다. 켜면 macOS가 브라우저 제어 권한을 한 번 요청합니다(시스템 설정 › 개인정보 보호 및 보안 › 자동화). Safari·Chrome·Edge·Brave·Arc에서 동작합니다.")
             .font(.custom("Figtree", size: 11))
             .foregroundColor(SettingsStyle.secondary)
             .fixedSize(horizontal: false, vertical: true)

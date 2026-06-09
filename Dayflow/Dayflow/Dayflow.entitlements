@@ -13,6 +13,13 @@
 	<key>com.apple.security.network.server</key>
 	<true/>
 
+	<!-- Required so the notarized (hardened-runtime) build may send Apple Events to
+	     read the active browser tab's host for timeline labeling. Without this, the
+	     opt-in browser-host feature silently fails in release builds. See
+	     HANDOFF/12 §7-3; usage string in Info.plist (NSAppleEventsUsageDescription). -->
+	<key>com.apple.security.automation.apple-events</key>
+	<true/>
+
 	<!-- Allow Sparkle's installer launcher XPC services to be looked up from sandbox -->
 	<key>com.apple.security.temporary-exception.mach-lookup.global-name</key>
 	<array>
