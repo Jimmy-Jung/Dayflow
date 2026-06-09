@@ -213,4 +213,32 @@ final class EvidencePipelineTests: XCTestCase {
     let entryLines = text.split(separator: "\n").filter { $0.hasPrefix("-") }
     XCTAssertEqual(entryLines.count, 2)
   }
+
+  // MARK: - OCR confidence folding into per-frame hint (HANDOFF/12 §8/§11-4)
+
+  private func meta(app: String?, title: String?) -> ActivityMetadata {
+    ActivityMetadata(
+      activeAppName: app, bundleId: nil, windowTitle: title, displayId: nil,
+      privacyState: .normal)
+  }
+
+  func testReliableOCRPromotesToHigh() {
+    let ocr = LocalOCR.Result(text: "x", hash: "h", confidence: 0.9)
+    let hint = EvidencePreprocessor.confidenceHint(
+      metadata: meta(app: "VS Code", title: "f.swift"), ocr: ocr, isNearDuplicate: false)
+    XCTAssertEqual(hint, "high")
+  }
+
+  func testLowConfidenceOCRDoesNotPromoteToHigh() {
+    let ocr = LocalOCR.Result(text: "x", hash: "h", confidence: 0.2)
+    let hint = EvidencePreprocessor.confidenceHint(
+      metadata: meta(app: "VS Code", title: "f.swift"), ocr: ocr, isNearDuplicate: false)
+    XCTAssertEqual(hint, "medium", "low-confidence OCR is supporting-only, not a high promoter")
+  }
+
+  func testNoOCRStaysMediumWithAppAndTitle() {
+    let hint = EvidencePreprocessor.confidenceHint(
+      metadata: meta(app: "VS Code", title: "f.swift"), ocr: nil, isNearDuplicate: false)
+    XCTAssertEqual(hint, "medium")
+  }
 }

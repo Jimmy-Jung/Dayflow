@@ -57,9 +57,11 @@ enum EvidencePreprocessor {
     if metadata.privacyState == .redacted { return "low" }
     let hasApp = metadata.activeAppName != nil
     let hasTitle = metadata.windowTitle != nil
-    let hasOCR = ocr != nil
+    // Low-confidence OCR is supporting evidence only (doc §11-4): it does not count
+    // toward "high". Only reliable OCR promotes the frame.
+    let hasReliableOCR = (ocr?.confidence ?? 0) >= LocalOCR.minReliableConfidence
 
-    if hasApp && hasTitle && hasOCR && !isNearDuplicate { return "high" }
+    if hasApp && hasTitle && hasReliableOCR && !isNearDuplicate { return "high" }
     if hasApp || hasTitle { return "medium" }
     return "low"
   }

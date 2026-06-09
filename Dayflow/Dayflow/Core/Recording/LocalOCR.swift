@@ -25,9 +25,15 @@ enum LocalOCR {
   /// Hard cap on stored OCR text length (chars). Bounds DB size and WAL cost.
   static let maxTextLength = 2_000
 
+  /// Mean per-line OCR confidence at/above which the text is treated as a reliable
+  /// signal (HANDOFF/12 §11-4: low-confidence OCR is supporting-only). Tunable.
+  static let minReliableConfidence = 0.5
+
   struct Result: Sendable, Equatable {
     let text: String
     let hash: String
+    /// Mean Vision recognition confidence across the collected lines, [0, 1].
+    let confidence: Double
   }
 
   /// Extracts visible text from a CGImage. Returns nil when OCR is disabled by
@@ -50,12 +56,14 @@ enum LocalOCR {
     guard let observations = request.results, !observations.isEmpty else { return nil }
 
     var collected: [String] = []
+    var confidenceSum = 0.0
     var length = 0
     for observation in observations {
       guard let candidate = observation.topCandidates(1).first else { continue }
       let line = candidate.string.trimmingCharacters(in: .whitespacesAndNewlines)
       guard !line.isEmpty else { continue }
       collected.append(line)
+      confidenceSum += Double(candidate.confidence)
       length += line.count + 1
       if length >= maxTextLength { break }
     }
@@ -66,8 +74,12 @@ enum LocalOCR {
       text = String(text.prefix(maxTextLength))
     }
 
+    // Mean per-line confidence (mean, not min — min is over-sensitive to a single
+    // noisy line). Aggregated later into the per-frame confidence hint.
+    let confidence = confidenceSum / Double(collected.count)
+
     let digest = SHA256.hash(data: Data(text.utf8))
     let hash = digest.map { String(format: "%02x", $0) }.joined()
-    return Result(text: text, hash: hash)
+    return Result(text: text, hash: hash, confidence: confidence)
   }
 }
