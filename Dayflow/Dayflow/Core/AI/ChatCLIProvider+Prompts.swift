@@ -23,6 +23,16 @@ extension ChatCLIProvider {
     // Build prompt with explicit concatenation to avoid GRDB SQL interpolation pollution
     let categoriesSectionText = categoriesSection(from: context.categories)
 
+    // Soft personalization hints from the user's category-edit history
+    // (HANDOFF/12 §7-2). Weak priors only — never a hard override.
+    let personalizationBlock: String = {
+      guard
+        let text = PersonalizationRules.contextText(
+          from: StorageManager.shared.recentCategoryEdits(limit: 500))
+      else { return "" }
+      return "\n\n" + text + "\n"
+    }()
+
     let languageBlock =
       LLMOutputLanguagePreferences.languageInstruction(forJSON: true)
       .map { "\n\n\($0)" } ?? ""
@@ -72,7 +82,7 @@ extension ChatCLIProvider {
           - A 10-minute Twitter scroll (new card or merge thoughtfully)
           - Sub-tasks related to the main activity
 
-          """ + categoriesSectionText + """
+          """ + categoriesSectionText + personalizationBlock + """
 
 
           APP SITES (Website Logos)
