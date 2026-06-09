@@ -24,6 +24,20 @@
 import Foundation
 
 enum KeyframeSelector {
+  /// Per-provider frame budgets (HANDOFF/12 §11-3). They differ because each
+  /// provider consumes frames differently — not arbitrary constants:
+  enum Budget {
+    /// Ollama: a local vision model runs one describe-call PER frame, so each
+    /// extra frame is a full local inference. Keep small to bound latency.
+    static let ollama = 15
+    /// Chat CLI: every frame is an image argument to the CLI and adds token cost
+    /// per call. Same small budget as Ollama.
+    static let chatCLI = 15
+    /// Dayflow Backend: frames are base64-batched into one server upload, so the
+    /// per-frame cost is low. Generous budget that only trims very large batches.
+    static let dayflowBackend = 90
+  }
+
   /// Returns at most `maxFrames` screenshots, sorted by capture time, always
   /// including the first and last. When the batch already fits, returns all.
   static func select(from screenshots: [Screenshot], maxFrames: Int) -> [Screenshot] {

@@ -1516,9 +1516,9 @@ extension OllamaProvider {
     let callStart = Date()
     let sortedScreenshots = screenshots.sorted { $0.capturedAt < $1.capturedAt }
 
-    // Select ~15 keyframes prioritizing transitions (app/title/OCR/idle changes)
-    // over naive even spacing, always keeping the first & last frame. (HANDOFF/12 §6-2)
-    let targetSamples = 15
+    // Select keyframes prioritizing transitions (app/title/OCR/idle changes) over
+    // naive even spacing, always keeping the first & last frame. (HANDOFF/12 §6-2)
+    let targetSamples = KeyframeSelector.Budget.ollama
     let sampledScreenshots = KeyframeSelector.select(
       from: sortedScreenshots, maxFrames: targetSamples)
 

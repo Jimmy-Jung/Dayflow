@@ -415,7 +415,8 @@ final class DayflowBackendProvider {
     // Keyframe selection bounds the upload for large batches while keeping the
     // first/last frame and all transitions (HANDOFF/12 §6-2). The generous budget
     // means typical 15-min batches (~90 frames) are unaffected.
-    let selectedScreenshots = KeyframeSelector.select(from: sortedScreenshots, maxFrames: 90)
+    let selectedScreenshots = KeyframeSelector.select(
+      from: sortedScreenshots, maxFrames: KeyframeSelector.Budget.dayflowBackend)
     let screenshotPayloads = selectedScreenshots.compactMap {
       screenshot -> DayflowScreenshotPayload? in
       guard let data = Self.jpegData(for: screenshot) else { return nil }
