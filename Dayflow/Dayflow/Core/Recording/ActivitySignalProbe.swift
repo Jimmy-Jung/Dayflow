@@ -71,8 +71,15 @@ enum ActivitySignalProbe {
   ]
 
   /// Extracts a git branch hint from a dev tool's window title, e.g. titles that
-  /// embed "(branch)". Returns nil for non-dev apps or no match. This is a
-  /// heuristic hint only (doc §11-4: store dev signals as estimated).
+  /// embed "(branch)". Returns nil for non-dev apps or no match.
+  ///
+  /// LIMITATION (intentional, HANDOFF/12 §7-3, §11-4): this is a title heuristic
+  /// only — NOT real git state. Reading the actual branch would require knowing the
+  /// frontmost editor's working directory, which has no public API (IDEs don't
+  /// expose cwd; only terminals do, via fragile AppleScript). Shelling out to
+  /// `git` every 10s capture would also fight the §6-3 thermal/low-power
+  /// throttling and add a per-app TCC prompt, so it is deliberately not done.
+  /// The branch is therefore stored as an estimate; absence is normal.
   static func gitBranchHint(bundleId: String?, windowTitle: String?) -> String? {
     guard let bundleId = bundleId?.lowercased(),
       devToolBundlePrefixes.contains(where: { bundleId.hasPrefix($0) }),
