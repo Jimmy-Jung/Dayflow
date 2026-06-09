@@ -134,3 +134,70 @@ struct TabFilterBar: View {
     }
   }
 }
+
+// "검토 필요만" filter toggle. A small togglable pill that mirrors the visual
+// language of `TabFilterBar.CategoryChip`. View-only filter — when on, the day
+// timeline shows only needsReview cards. The caller is responsible for hiding
+// this chip when there are no needsReview cards for the day.
+struct NeedsReviewFilterChip: View {
+  @Binding var isOn: Bool
+  let count: Int
+
+  @State private var isHovering = false
+
+  var body: some View {
+    Button {
+      withAnimation(.easeOut(duration: 0.18)) {
+        isOn.toggle()
+      }
+    } label: {
+      HStack(spacing: 6) {
+        Image(systemName: "exclamationmark.circle")
+          .font(.system(size: 11, weight: .semibold))
+
+        Text("검토 필요만")
+          .font(Font.custom("Figtree", size: 13).weight(.medium))
+          .lineLimit(1)
+          .fixedSize()
+
+        Text("\(count)")
+          .font(Font.custom("Figtree", size: 11).weight(.semibold))
+          .padding(.horizontal, 5)
+          .padding(.vertical, 1)
+          .background(
+            Capsule().fill(
+              isOn ? Color.white.opacity(0.85) : Color(red: 0.92, green: 0.74, blue: 0.55).opacity(0.35)
+            )
+          )
+      }
+      .foregroundColor(
+        isOn ? .white : Color(red: 0.45, green: 0.32, blue: 0.18)
+      )
+      .padding(.horizontal, 8)
+      .padding(.vertical, 5)
+      .frame(height: 26)
+      .background(
+        isOn
+          ? Color(red: 0.85, green: 0.49, blue: 0.16)
+          : (isHovering ? Color.white.opacity(0.92) : Color.white.opacity(0.76))
+      )
+      .cornerRadius(6)
+      .overlay(
+        RoundedRectangle(cornerRadius: 6)
+          .inset(by: 0.25)
+          .stroke(
+            isOn
+              ? Color(red: 0.85, green: 0.49, blue: 0.16)
+              : Color(red: 0.88, green: 0.78, blue: 0.66),
+            lineWidth: 0.5
+          )
+      )
+    }
+    .buttonStyle(.plain)
+    .pointingHandCursor()
+    .onHover { isHovering = $0 }
+    .help(isOn ? "전체 카드 보기" : "검토 필요 카드만 보기")
+    .accessibilityLabel("검토 필요만 필터")
+    .accessibilityValue(isOn ? "켜짐" : "꺼짐")
+  }
+}

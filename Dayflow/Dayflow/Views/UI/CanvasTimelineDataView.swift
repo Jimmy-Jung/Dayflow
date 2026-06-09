@@ -131,6 +131,12 @@ struct CanvasTimelineDataView: View {
   @Binding var selectedActivity: TimelineActivity?
   @Binding var scrollToNowTick: Int
   @Binding var hasAnyActivities: Bool
+  // "검토 필요만" filter: when true, only needsReview==true cards render.
+  // View-only — never affects the database read in `loadActivities`.
+  @Binding var showNeedsReviewOnly: Bool
+  // Published up to MainView so the toggle's visibility / stale-reset can key off
+  // the true count of needsReview cards for the loaded day.
+  @Binding var needsReviewCount: Int
   @Binding var refreshTrigger: Int
   let weeklyHoursFrame: CGRect
   @Binding var weeklyHoursIntersectsCard: Bool
@@ -172,6 +178,13 @@ struct CanvasTimelineDataView: View {
 
   private var pixelsPerMinute: CGFloat {
     hourHeight / 60
+  }
+
+  // Render-only filter. Returns the subset of positioned activities to draw.
+  // When the "검토 필요만" toggle is on, keep only needsReview==true cards.
+  private var displayedActivities: [CanvasPositionedActivity] {
+    guard showNeedsReviewOnly else { return positionedActivities }
+    return positionedActivities.filter { $0.activity.needsReview }
   }
 
   private var timelineHeight: CGFloat {
@@ -222,6 +235,7 @@ struct CanvasTimelineDataView: View {
       .onChange(of: refreshTrigger) { loadActivities() }
       .onChange(of: appState.isRecording) { loadActivities(animate: false) }
       .onChange(of: hourHeight) { loadActivities(animate: false) }
+      .onChange(of: showNeedsReviewOnly) { clearSelectionIfFilteredOut() }
       .onReceive(
         NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
       ) { _ in
@@ -399,7 +413,7 @@ struct CanvasTimelineDataView: View {
             clearSelection()
           }
           .pointingHandCursor(enabled: selectedCardId != nil || selectedActivity != nil)
-        ForEach(Array(positionedActivities.enumerated()), id: \.element.id) { index, item in
+        ForEach(Array(displayedActivities.enumerated()), id: \.element.id) { index, item in
           let isVisible = cardEntranceProgress[item.id] ?? false
           CanvasActivityCard(
             title: item.title,
@@ -687,6 +701,15 @@ struct CanvasTimelineDataView: View {
     selectedActivity = nil
   }
 
+  // When the filter is toggled on and the currently selected card is no longer
+  // visible, drop the selection so the inspector doesn't show a hidden card.
+  private func clearSelectionIfFilteredOut() {
+    guard let selectedActivity else { return }
+    if !displayedActivities.contains(where: { $0.activity.id == selectedActivity.id }) {
+      clearSelection()
+    }
+  }
+
   private var timelineSpinnerConfig: TimelineSpinnerConfig {
     var config = TimelineSpinnerConfig.reference
     config.gap = 1.0
@@ -783,8 +806,21 @@ struct CanvasTimelineDataView: View {
         self.positionedActivities = positioned
         self.recordingProjection = recordingProjection
         self.hasAnyActivities = !positioned.isEmpty
+
+        // Publish the true needsReview count for the loaded day. When it drops
+        // to 0, force the filter off so the user never lands on a blank timeline
+        // (e.g. after reviewing the last flagged card or navigating to a clean day).
+        let reviewCount = positioned.filter { $0.activity.needsReview }.count
+        self.needsReviewCount = reviewCount
+        if reviewCount == 0 && self.showNeedsReviewOnly {
+          self.showNeedsReviewOnly = false
+        }
+        let visible =
+          self.showNeedsReviewOnly && reviewCount > 0
+          ? positioned.filter { $0.activity.needsReview }
+          : positioned
         if let selectedActivity,
-          !positioned.contains(where: { $0.activity.id == selectedActivity.id })
+          !visible.contains(where: { $0.activity.id == selectedActivity.id })
         {
           clearSelection()
         }
@@ -1514,6 +1550,8 @@ struct CanvasCardButtonStyle: ButtonStyle {
         selectedActivity: $selected,
         scrollToNowTick: $tick,
         hasAnyActivities: .constant(true),
+        showNeedsReviewOnly: .constant(false),
+        needsReviewCount: .constant(0),
         refreshTrigger: $refresh,
         weeklyHoursFrame: .zero,
         weeklyHoursIntersectsCard: $weeklyHoursIntersectsCard,

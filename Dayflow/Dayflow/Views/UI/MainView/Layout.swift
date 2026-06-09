@@ -1046,11 +1046,24 @@ extension MainView {
 
   private var timelineContent: some View {
     VStack(alignment: .leading, spacing: 12) {
-      TabFilterBar(
-        categories: categoryStore.editableCategories,
-        idleCategory: categoryStore.idleCategory,
-        onManageCategories: { showCategoryEditor = true }
-      )
+      HStack(spacing: 8) {
+        TabFilterBar(
+          categories: categoryStore.editableCategories,
+          idleCategory: categoryStore.idleCategory,
+          onManageCategories: { showCategoryEditor = true }
+        )
+
+        // "검토 필요만" filter chip — day view only, and only when the loaded day
+        // actually has needsReview cards. Hidden at count==0 to avoid a blank
+        // timeline (the filter itself also force-resets to off in that case).
+        if timelineMode == .day, dayNeedsReviewCount > 0 {
+          NeedsReviewFilterChip(isOn: $needsReviewOnly, count: dayNeedsReviewCount)
+            .fixedSize()
+            .layoutPriority(1)
+            .transition(.opacity.combined(with: .scale(scale: 0.94)))
+        }
+      }
+      .animation(.easeOut(duration: 0.18), value: dayNeedsReviewCount > 0)
       .padding(.leading, 10 + TimelineAlignment.categoryRowInset)
       .opacity(contentOpacity)
 
@@ -1062,6 +1075,8 @@ extension MainView {
             selectedActivity: $selectedActivity,
             scrollToNowTick: $scrollToNowTick,
             hasAnyActivities: $hasAnyActivities,
+            showNeedsReviewOnly: $needsReviewOnly,
+            needsReviewCount: $dayNeedsReviewCount,
             refreshTrigger: $refreshActivitiesTrigger,
             weeklyHoursFrame: weeklyHoursFrame,
             weeklyHoursIntersectsCard: $weeklyHoursIntersectsCard,

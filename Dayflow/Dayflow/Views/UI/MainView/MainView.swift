@@ -32,6 +32,13 @@ struct MainView: View {
   @State var weekInspectorContentVisible = false
   @State var scrollToNowTick: Int = 0
   @State var hasAnyActivities: Bool = true
+  // Day timeline "검토 필요만" filter (HANDOFF/12 §7-1). View-only: filters the
+  // rendered cards, never re-queries or mutates stored data. `dayNeedsReviewCount`
+  // is published up from CanvasTimelineDataView and reflects the actual count of
+  // needsReview==true cards currently positioned for the selected day — it drives
+  // both toggle visibility and the stale-state reset that prevents a blank screen.
+  @State var needsReviewOnly: Bool = false
+  @State var dayNeedsReviewCount: Int = 0
   @State var refreshActivitiesTrigger: Int = 0
   @ObservedObject var inactivity = InactivityMonitor.shared
   @ObservedObject var pauseManager = PauseManager.shared
