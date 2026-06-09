@@ -407,7 +407,7 @@ final class DailyRecapGenerator {
     let prompt = Self.makeLocalPrompt(day: context.sourceDayString, cards: context.cards)
     let (rawText, _) = try await provider.generateText(
       prompt: prompt,
-      model: "gpt-5.4",
+      model: "gpt-5.5",
       reasoningEffort: nil,
       disableTools: true
     )

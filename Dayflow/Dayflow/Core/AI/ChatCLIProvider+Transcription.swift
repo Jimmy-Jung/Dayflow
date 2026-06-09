@@ -241,7 +241,7 @@ extension ChatCLIProvider {
       model = "haiku"
       effort = nil
     case .codex:
-      model = "gpt-5.4-mini"
+      model = "gpt-5.5-mini"
       effort = "low"
     }
 
