@@ -25,6 +25,49 @@ struct TimelineActivity: Identifiable {
   let screenshot: NSImage?
   let appSites: AppSites?
   let isBackupGenerated: Bool?
+  let confidence: Double?
+  let needsReview: Bool
+  let sourceSummary: String?
+
+  init(
+    id: String,
+    recordId: Int64?,
+    batchId: Int64?,
+    startTime: Date,
+    endTime: Date,
+    title: String,
+    summary: String,
+    detailedSummary: String,
+    category: String,
+    subcategory: String,
+    distractions: [Distraction]?,
+    videoSummaryURL: String?,
+    screenshot: NSImage?,
+    appSites: AppSites?,
+    isBackupGenerated: Bool?,
+    confidence: Double? = nil,
+    needsReview: Bool = false,
+    sourceSummary: String? = nil
+  ) {
+    self.id = id
+    self.recordId = recordId
+    self.batchId = batchId
+    self.startTime = startTime
+    self.endTime = endTime
+    self.title = title
+    self.summary = summary
+    self.detailedSummary = detailedSummary
+    self.category = category
+    self.subcategory = subcategory
+    self.distractions = distractions
+    self.videoSummaryURL = videoSummaryURL
+    self.screenshot = screenshot
+    self.appSites = appSites
+    self.isBackupGenerated = isBackupGenerated
+    self.confidence = confidence
+    self.needsReview = needsReview
+    self.sourceSummary = sourceSummary
+  }
 
   static func stableId(
     recordId: Int64?, batchId: Int64?, startTime: Date, endTime: Date, title: String,
@@ -64,7 +107,10 @@ struct TimelineActivity: Identifiable {
       videoSummaryURL: videoSummaryURL,
       screenshot: screenshot,
       appSites: appSites,
-      isBackupGenerated: isBackupGenerated
+      isBackupGenerated: isBackupGenerated,
+      confidence: confidence,
+      needsReview: needsReview,
+      sourceSummary: sourceSummary
     )
   }
 
@@ -84,7 +130,10 @@ struct TimelineActivity: Identifiable {
       videoSummaryURL: newVideoSummaryURL,
       screenshot: screenshot,
       appSites: appSites,
-      isBackupGenerated: isBackupGenerated
+      isBackupGenerated: isBackupGenerated,
+      confidence: confidence,
+      needsReview: needsReview,
+      sourceSummary: sourceSummary
     )
   }
 }

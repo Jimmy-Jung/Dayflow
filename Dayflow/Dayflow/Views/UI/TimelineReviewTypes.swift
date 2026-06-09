@@ -235,7 +235,10 @@ func makeTimelineActivities(from cards: [TimelineCard], for date: Date)
         videoSummaryURL: card.videoSummaryURL,
         screenshot: nil,
         appSites: card.appSites,
-        isBackupGenerated: card.isBackupGenerated
+        isBackupGenerated: card.isBackupGenerated,
+        confidence: card.confidence,
+        needsReview: card.needsReview,
+        sourceSummary: card.sourceSummary
       ))
   }
 

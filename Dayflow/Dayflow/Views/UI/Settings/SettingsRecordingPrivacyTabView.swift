@@ -16,6 +16,7 @@ struct SettingsRecordingPrivacyTabView: View {
       subtitle: "Choose apps Dayflow should hide from screenshots."
     ) {
       VStack(alignment: .leading, spacing: 18) {
+        evidenceToggles
         searchField
         installedAppsGrid
           .frame(maxHeight: .infinity, alignment: .top)
@@ -27,6 +28,47 @@ struct SettingsRecordingPrivacyTabView: View {
     .onAppear {
       viewModel.handleOnAppear()
     }
+  }
+
+  private var evidenceToggles: some View {
+    VStack(alignment: .leading, spacing: 10) {
+      Toggle(isOn: $viewModel.isLocalOCREnabled) {
+        VStack(alignment: .leading, spacing: 2) {
+          Text("화면 텍스트 분석(OCR)")
+            .font(.custom("Figtree", size: 13))
+            .fontWeight(.semibold)
+            .foregroundColor(SettingsStyle.text)
+          Text("기기 내에서 화면 텍스트를 추출해 분석 정확도를 높입니다. 차단된 앱에는 적용되지 않습니다.")
+            .font(.custom("Figtree", size: 11))
+            .foregroundColor(SettingsStyle.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+      }
+      .toggleStyle(.switch)
+
+      Toggle(isOn: $viewModel.isBrowserURLCollectionEnabled) {
+        VStack(alignment: .leading, spacing: 2) {
+          Text("브라우저 주소(host) 수집")
+            .font(.custom("Figtree", size: 13))
+            .fontWeight(.semibold)
+            .foregroundColor(SettingsStyle.text)
+          Text("활성 탭의 도메인(host)만 저장하며 경로·쿼리는 항상 제외합니다. 일부 브라우저에서만 동작합니다.")
+            .font(.custom("Figtree", size: 11))
+            .foregroundColor(SettingsStyle.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+      }
+      .toggleStyle(.switch)
+    }
+    .padding(12)
+    .background(
+      RoundedRectangle(cornerRadius: 8, style: .continuous)
+        .fill(Color.black.opacity(0.025))
+    )
+    .overlay(
+      RoundedRectangle(cornerRadius: 8, style: .continuous)
+        .stroke(SettingsStyle.divider, lineWidth: 1)
+    )
   }
 
   private var searchField: some View {

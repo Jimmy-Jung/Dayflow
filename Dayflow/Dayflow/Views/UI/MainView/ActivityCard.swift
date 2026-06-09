@@ -153,12 +153,18 @@ struct ActivityCard: View {
       // Header
       HStack(alignment: .center) {
         VStack(alignment: .leading, spacing: 6) {
-          Text(activity.title)
-            .font(
-              Font.custom("Figtree", size: 16)
-                .weight(.semibold)
-            )
-            .foregroundColor(.black)
+          HStack(alignment: .center, spacing: 8) {
+            Text(activity.title)
+              .font(
+                Font.custom("Figtree", size: 16)
+                  .weight(.semibold)
+              )
+              .foregroundColor(.black)
+
+            if activity.needsReview && !isFailedCard(activity) {
+              needsReviewBadge(for: activity)
+            }
+          }
 
           HStack(alignment: .center, spacing: 6) {
             Text(
@@ -356,6 +362,30 @@ struct ActivityCard: View {
       mutable.insert("\n", at: matches[idx].range.location)
     }
     return mutable as String
+  }
+
+  @ViewBuilder
+  private func needsReviewBadge(for activity: TimelineActivity) -> some View {
+    let trimmedSource = activity.sourceSummary?.trimmingCharacters(in: .whitespacesAndNewlines)
+    HStack(spacing: 3) {
+      Image(systemName: "exclamationmark.triangle.fill")
+        .font(.system(size: 9, weight: .semibold))
+      Text("검토 필요")
+        .font(Font.custom("Figtree", size: 11).weight(.medium))
+        .lineLimit(1)
+    }
+    .foregroundColor(Color(red: 0.72, green: 0.45, blue: 0.0))
+    .padding(.horizontal, 7)
+    .padding(.vertical, 3)
+    .background(Color(red: 1.0, green: 0.96, blue: 0.85))
+    .cornerRadius(200)
+    .overlay(
+      RoundedRectangle(cornerRadius: 200)
+        .inset(by: 0.25)
+        .stroke(Color(red: 0.95, green: 0.82, blue: 0.5), lineWidth: 0.5)
+    )
+    .fixedSize()
+    .modifier(OptionalHelp(text: (trimmedSource?.isEmpty == false) ? trimmedSource : nil))
   }
 
   private func categoryBadge(for raw: String) -> (name: String, indicator: Color)? {
@@ -606,6 +636,18 @@ struct ActivityCard: View {
           timelapsePreviewThumbnail = image
         }
       }
+    }
+  }
+}
+
+private struct OptionalHelp: ViewModifier {
+  let text: String?
+
+  func body(content: Content) -> some View {
+    if let text {
+      content.help(text)
+    } else {
+      content
     }
   }
 }

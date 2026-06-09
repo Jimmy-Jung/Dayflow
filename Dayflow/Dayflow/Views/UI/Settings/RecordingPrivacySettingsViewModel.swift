@@ -7,8 +7,21 @@ final class RecordingPrivacySettingsViewModel: ObservableObject {
   @Published private(set) var blockedIdentifiers: [String]
   @Published private(set) var isLoadingApplications = false
 
+  // Opt-in evidence-collection toggles (HANDOFF/12 §11-2). Default off; the
+  // blocked-app privacy gate always applies regardless of these.
+  @Published var isLocalOCREnabled: Bool {
+    didSet { RecordingPrivacyPreferences.isLocalOCREnabled = isLocalOCREnabled }
+  }
+  @Published var isBrowserURLCollectionEnabled: Bool {
+    didSet {
+      RecordingPrivacyPreferences.isBrowserURLCollectionEnabled = isBrowserURLCollectionEnabled
+    }
+  }
+
   init() {
     blockedIdentifiers = RecordingPrivacyPreferences.blockedApplicationIdentifiers()
+    isLocalOCREnabled = RecordingPrivacyPreferences.isLocalOCREnabled
+    isBrowserURLCollectionEnabled = RecordingPrivacyPreferences.isBrowserURLCollectionEnabled
   }
 
   var filteredApplications: [RecordingPrivacyApplication] {
