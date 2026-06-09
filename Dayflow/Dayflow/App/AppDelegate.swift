@@ -43,6 +43,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   func applicationDidFinishLaunching(_ note: Notification) {
+    // Running under XCTest: skip heavy startup (recording, analysis, network,
+    // notifications) so the app-hosted test runner can attach without the host
+    // app blocking. Pure-logic unit tests do not need the live app. See
+    // HANDOFF/12 — DayflowTests is app-hosted and otherwise hangs headless.
+    if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+      || NSClassFromString("XCTestCase") != nil
+    {
+      return
+    }
+
     // Block termination by default; only specific flows enable it.
     AppDelegate.allowTermination = false
     applySavedDockIconPreference()
