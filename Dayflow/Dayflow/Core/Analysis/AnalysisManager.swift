@@ -385,6 +385,15 @@ final class AnalysisManager: AnalysisManaging {
 
   private func processRecordings() {
     guard !isProcessing else { return }
+
+    // Defer automatic analysis under system pressure (HANDOFF/12 §6-3). Capture &
+    // local preprocessing keep running; unprocessed screenshots stay queued and the
+    // next tick retries. User-initiated reprocessing bypasses this path entirely.
+    if let reason = AnalysisThrottle.deferralReason() {
+      print("⏸️ Deferring automatic analysis: \(reason)")
+      return
+    }
+
     isProcessing = true
     defer { isProcessing = false }
 
