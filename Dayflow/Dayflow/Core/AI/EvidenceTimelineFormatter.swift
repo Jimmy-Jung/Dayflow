@@ -65,12 +65,16 @@ enum EvidenceTimelineFormatter {
     return ([header] + lines).joined(separator: "\n")
   }
 
-  /// Identity used to collapse consecutive near-duplicate frames.
+  /// Identity used to collapse consecutive near-duplicate frames. Includes the
+  /// OCR text hash and browser host so a screen change with the same app/title
+  /// (e.g. scrolling a doc, switching tab) is NOT collapsed away.
   private static func dedupKey(for shot: Screenshot) -> String {
     if shot.privacyState == "redacted" { return "redacted" }
     let app = shot.activeAppName ?? "?"
     let title = shot.windowTitle ?? "?"
-    return "\(app)\u{1F}\(title)"
+    let host = shot.browserHost ?? "?"
+    let textHash = shot.visibleTextHash ?? "?"
+    return "\(app)\u{1F}\(title)\u{1F}\(host)\u{1F}\(textHash)"
   }
 
   /// Human-readable single-frame descriptor.
@@ -85,9 +89,27 @@ enum EvidenceTimelineFormatter {
     if parts.isEmpty { parts.append("unknown app") }
 
     var descriptor = parts.joined(separator: " — ")
+    if let host = shot.browserHost, !host.isEmpty {
+      descriptor += " | url \(host)"
+    }
+    if let branch = shot.gitBranch, !branch.isEmpty {
+      descriptor += " | branch \(branch)"
+    }
     if let idle = shot.idleSecondsAtCapture, idle > 0 {
       descriptor += " | idle \(idle)s"
     }
+    if let text = shot.visibleText, !text.isEmpty {
+      descriptor += " | text: \(ocrSnippet(text))"
+    }
     return descriptor
+  }
+
+  /// Single-line, length-bounded OCR snippet for the prompt (supporting evidence).
+  private static func ocrSnippet(_ text: String, maxLength: Int = 120) -> String {
+    let oneLine = text
+      .replacingOccurrences(of: "\n", with: " ")
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    if oneLine.count <= maxLength { return oneLine }
+    return String(oneLine.prefix(maxLength)) + "…"
   }
 }

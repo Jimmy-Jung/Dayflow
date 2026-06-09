@@ -1285,7 +1285,8 @@ final class OllamaProvider {
     _ frameDescriptions: [(timestamp: TimeInterval, description: String)],
     batchStartTime: Date,
     videoDuration: TimeInterval,
-    batchId: Int64?
+    batchId: Int64?,
+    metadataTimeline: String? = nil
   ) async throws -> [Observation] {
 
     var formattedDescriptions = ""
@@ -1300,6 +1301,21 @@ final class OllamaProvider {
     let durationSeconds = Int(videoDuration.truncatingRemainder(dividingBy: 60))
     let durationString = String(format: "%02d:%02d", durationMinutes, durationSeconds)
 
+    // Optional on-device metadata block (HANDOFF/12 §5/§6). Additive context only;
+    // clock times here are NOT the MM:SS coordinate the model must output in.
+    let metadataSection: String = {
+      guard let metadataTimeline, !metadataTimeline.isEmpty else { return "" }
+      return """
+
+        --- Supporting metadata (DO NOT copy these timestamps) ---
+        Real-world clock times captured on-device, for context only. Use them to
+        disambiguate app/file/URL names and detect continued vs. switched activity.
+        \(metadataTimeline)
+        --- End supporting metadata ---
+
+        """
+    }()
+
     let basePrompt = """
       You have \(frameDescriptions.count) snapshots from a \(durationString) screen recording.
 
@@ -1311,6 +1327,7 @@ final class OllamaProvider {
 
       Here are the snapshots (timestamp → description):
       \(formattedDescriptions)
+      \(metadataSection)
 
       Respond with a JSON object using this exact shape:
       {
@@ -1488,11 +1505,11 @@ extension OllamaProvider {
     let callStart = Date()
     let sortedScreenshots = screenshots.sorted { $0.capturedAt < $1.capturedAt }
 
-    // Sample ~15 evenly spaced screenshots to avoid hammering the local LLM
+    // Select ~15 keyframes prioritizing transitions (app/title/OCR/idle changes)
+    // over naive even spacing, always keeping the first & last frame. (HANDOFF/12 §6-2)
     let targetSamples = 15
-    let strideAmount = max(1, sortedScreenshots.count / targetSamples)
-    let sampledScreenshots = Swift.stride(from: 0, to: sortedScreenshots.count, by: strideAmount)
-      .map { sortedScreenshots[$0] }
+    let sampledScreenshots = KeyframeSelector.select(
+      from: sortedScreenshots, maxFrames: targetSamples)
 
     // Calculate duration from timestamp range
     let firstTs = sampledScreenshots.first!.capturedAt
@@ -1525,11 +1542,13 @@ extension OllamaProvider {
     }
 
     // Merge frame descriptions into coherent observations
+    let metadataTimeline = EvidenceTimelineFormatter.timelineText(for: sampledScreenshots)
     let observations = try await mergeFrameDescriptions(
       frameDescriptions,
       batchStartTime: batchStartTime,
       videoDuration: durationSeconds,
-      batchId: batchId
+      batchId: batchId,
+      metadataTimeline: metadataTimeline
     )
 
     let totalTime = Date().timeIntervalSince(callStart)

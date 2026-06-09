@@ -5,11 +5,25 @@ extension ChatCLIProvider {
   // MARK: - Screenshot Transcription
 
   func buildScreenshotTranscriptionPrompt(
-    numFrames: Int, duration: String, startTime: String, endTime: String
+    numFrames: Int, duration: String, startTime: String, endTime: String,
+    metadataTimeline: String? = nil
   ) -> String {
+    let metadataSection: String = {
+      guard let metadataTimeline, !metadataTimeline.isEmpty else { return "" }
+      return """
+
+
+        --- Supporting metadata (DO NOT copy these timestamps) ---
+        Real-world clock times captured on-device, for context only. Use them to
+        disambiguate app/file/URL names and detect continued vs. switched activity.
+        \(metadataTimeline)
+        --- End supporting metadata ---
+        """
+    }()
     return """
       Analyze these \(numFrames) screenshots from a \(duration) screen recording
       (\(startTime) to \(endTime)). They are 1 min apart and in order.
+      \(metadataSection)
 
       Create an activity log detailed enough that someone could reconstruct what
       the user did.
@@ -192,11 +206,11 @@ extension ChatCLIProvider {
     let callStart = Date()
     let sortedScreenshots = screenshots.sorted { $0.capturedAt < $1.capturedAt }
 
-    // Sample ~15 evenly spaced screenshots to reduce API calls
+    // Select ~15 keyframes prioritizing transitions (app/title/OCR/idle changes)
+    // over naive even spacing, always keeping the first & last frame. (HANDOFF/12 §6-2)
     let targetSamples = 15
-    let strideAmount = max(1, sortedScreenshots.count / targetSamples)
-    let sampledScreenshots = Swift.stride(from: 0, to: sortedScreenshots.count, by: strideAmount)
-      .map { sortedScreenshots[$0] }
+    let sampledScreenshots = KeyframeSelector.select(
+      from: sortedScreenshots, maxFrames: targetSamples)
 
     let firstTs = sortedScreenshots.first!.capturedAt
     let lastTs = sortedScreenshots.last!.capturedAt
@@ -231,11 +245,13 @@ extension ChatCLIProvider {
       effort = "low"
     }
 
+    let metadataTimeline = EvidenceTimelineFormatter.timelineText(for: sampledScreenshots)
     let basePrompt = buildScreenshotTranscriptionPrompt(
       numFrames: imagePaths.count,
       duration: durationString,
       startTime: "00:00:00",
-      endTime: durationString
+      endTime: durationString,
+      metadataTimeline: metadataTimeline
     )
     var actualPrompt = basePrompt
     var lastError: Error?
