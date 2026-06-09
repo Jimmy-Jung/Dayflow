@@ -706,6 +706,62 @@ final class StorageManager: StorageManaging, @unchecked Sendable {
             """)
         print("✅ Added is_skipped column to day_goals")
       }
+
+      // Phase 2/3 evidence columns (HANDOFF/12 §8). Image fingerprint, OCR text,
+      // near-duplicate flag, per-frame confidence hint, browser/dev signals. All
+      // nullable so historical rows and the redacted path remain valid.
+      let evidenceColumns: [(name: String, type: String)] = [
+        ("image_hash", "TEXT"),
+        ("visible_text", "TEXT"),
+        ("visible_text_hash", "TEXT"),
+        ("is_near_duplicate", "INTEGER NOT NULL DEFAULT 0"),
+        ("confidence_hint", "TEXT"),
+        ("browser_host", "TEXT"),
+        ("git_branch", "TEXT"),
+      ]
+      let screenshotColumnsNow = try db.columns(in: "screenshots").map { $0.name }
+      for column in evidenceColumns where !screenshotColumnsNow.contains(column.name) {
+        try db.execute(
+          sql: "ALTER TABLE screenshots ADD COLUMN \(column.name) \(column.type);")
+        print("✅ Added \(column.name) column to screenshots")
+      }
+
+      // Card-level analysis quality fields (HANDOFF/12 §8). confidence in [0,1],
+      // source_summary describes evidence used, needs_review flags low-confidence cards.
+      let cardQualityColumns: [(name: String, type: String)] = [
+        ("confidence", "REAL"),
+        ("source_summary", "TEXT"),
+        ("needs_review", "INTEGER NOT NULL DEFAULT 0"),
+      ]
+      let cardColumnsNow = try db.columns(in: "timeline_cards").map { $0.name }
+      for column in cardQualityColumns where !cardColumnsNow.contains(column.name) {
+        try db.execute(
+          sql: "ALTER TABLE timeline_cards ADD COLUMN \(column.name) \(column.type);")
+        print("✅ Added \(column.name) column to timeline_cards")
+      }
+
+      // Category-edit log (HANDOFF/12 §7-2, §11-5). Records every user category
+      // correction so the personalization engine can derive SOFT rules from
+      // *repeated* patterns — never from a single edit. This is the input the
+      // current updateTimelineCardCategory lacks.
+      try db.execute(
+        sql: """
+              CREATE TABLE IF NOT EXISTS category_edits (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  card_id INTEGER,
+                  bundle_id TEXT,
+                  app_name TEXT,
+                  window_title TEXT,
+                  browser_host TEXT,
+                  old_category TEXT,
+                  new_category TEXT NOT NULL,
+                  created_at INTEGER NOT NULL
+              );
+              CREATE INDEX IF NOT EXISTS idx_category_edits_signal
+              ON category_edits(bundle_id, browser_host);
+              CREATE INDEX IF NOT EXISTS idx_category_edits_created_at
+              ON category_edits(created_at DESC);
+          """)
     }
   }
 

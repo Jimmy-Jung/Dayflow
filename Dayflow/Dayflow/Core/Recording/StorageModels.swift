@@ -115,6 +115,10 @@ struct TimelineCard: Codable, Sendable, Identifiable {
   let otherVideoSummaryURLs: [String]?  // For merged cards, subsequent video URLs
   let appSites: AppSites?
   let isBackupGenerated: Bool?
+  // Analysis-quality fields (HANDOFF/12 §8). Nullable for historical cards.
+  let confidence: Double?      // [0,1] aggregate evidence confidence
+  let sourceSummary: String?   // human-readable evidence breakdown
+  let needsReview: Bool        // true when confidence is below the review threshold
 
   init(
     id: UUID = UUID(),
@@ -132,7 +136,10 @@ struct TimelineCard: Codable, Sendable, Identifiable {
     videoSummaryURL: String?,
     otherVideoSummaryURLs: [String]?,
     appSites: AppSites?,
-    isBackupGenerated: Bool? = nil
+    isBackupGenerated: Bool? = nil,
+    confidence: Double? = nil,
+    sourceSummary: String? = nil,
+    needsReview: Bool = false
   ) {
     self.id = id
     self.recordId = recordId
@@ -150,6 +157,9 @@ struct TimelineCard: Codable, Sendable, Identifiable {
     self.otherVideoSummaryURLs = otherVideoSummaryURLs
     self.appSites = appSites
     self.isBackupGenerated = isBackupGenerated
+    self.confidence = confidence
+    self.sourceSummary = sourceSummary
+    self.needsReview = needsReview
   }
 }
 

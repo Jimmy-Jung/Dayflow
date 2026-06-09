@@ -95,8 +95,26 @@ protocol StorageManaging: Sendable {
     url: URL,
     capturedAt: Date,
     idleSecondsAtCapture: Int?,
-    metadata: ActivityMetadata
+    metadata: ActivityMetadata,
+    evidence: CaptureEvidence
   ) -> Int64?
+
+  /// Most recent stored image hash (for near-duplicate detection at capture time)
+  func lastScreenshotImageHash() -> String?
+
+  /// Append a user category correction to the personalization edit log
+  func logCategoryEdit(
+    cardId: Int64?,
+    bundleId: String?,
+    appName: String?,
+    windowTitle: String?,
+    browserHost: String?,
+    oldCategory: String?,
+    newCategory: String
+  )
+
+  /// Recent category-edit rows for personalization rule derivation
+  func recentCategoryEdits(limit: Int) -> [CategoryEdit]
 
   /// Fetch screenshots that haven't been assigned to a batch yet
   func fetchUnprocessedScreenshots(since oldestTimestamp: Int) -> [Screenshot]

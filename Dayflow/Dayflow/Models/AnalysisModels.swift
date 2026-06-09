@@ -37,6 +37,16 @@ struct Screenshot: Codable, Sendable {
   let displayId: Int?
   let privacyState: String?  // "normal" | "redacted"
 
+  // Evidence fields (Phase 2/3, HANDOFF/12 §5/§6/§8). All nullable; populated by
+  // local preprocessing (fingerprint, OCR) and the extended metadata collector.
+  let imageHash: String?            // perceptual hash (aHash/dHash) for near-duplicate detection
+  let visibleText: String?          // local Vision OCR text (length-capped, privacy-gated)
+  let visibleTextHash: String?      // hash of OCR text for cheap change detection
+  let isNearDuplicate: Bool         // true when frame is a near-duplicate of the previous
+  let confidenceHint: String?       // "high" | "medium" | "low" — per-frame evidence quality
+  let browserHost: String?          // browser active-tab host (query redacted), or nil/"unknown"
+  let gitBranch: String?            // current git branch when a dev tool is frontmost
+
   /// Explicit initializer with defaults for the metadata fields so existing
   /// call sites (e.g. VideoProcessingService URL fallback) remain valid.
   init(
@@ -50,7 +60,14 @@ struct Screenshot: Codable, Sendable {
     bundleId: String? = nil,
     windowTitle: String? = nil,
     displayId: Int? = nil,
-    privacyState: String? = nil
+    privacyState: String? = nil,
+    imageHash: String? = nil,
+    visibleText: String? = nil,
+    visibleTextHash: String? = nil,
+    isNearDuplicate: Bool = false,
+    confidenceHint: String? = nil,
+    browserHost: String? = nil,
+    gitBranch: String? = nil
   ) {
     self.id = id
     self.capturedAt = capturedAt
@@ -63,6 +80,13 @@ struct Screenshot: Codable, Sendable {
     self.windowTitle = windowTitle
     self.displayId = displayId
     self.privacyState = privacyState
+    self.imageHash = imageHash
+    self.visibleText = visibleText
+    self.visibleTextHash = visibleTextHash
+    self.isNearDuplicate = isNearDuplicate
+    self.confidenceHint = confidenceHint
+    self.browserHost = browserHost
+    self.gitBranch = gitBranch
   }
 
   var fileURL: URL {
