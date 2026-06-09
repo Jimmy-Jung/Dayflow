@@ -33,14 +33,8 @@ enum ConfidenceEstimator {
     let redactedRatio = ratio(screenshots) { $0.privacyState == "redacted" }
     let dupRatio = ratio(screenshots) { $0.isNearDuplicate }
 
-    // Mean per-frame hint (high=1, medium=0.6, low/absent=0.25).
-    let hintScore = screenshots.reduce(0.0) { acc, shot in
-      switch shot.confidenceHint {
-      case "high": return acc + 1.0
-      case "medium": return acc + 0.6
-      default: return acc + 0.25
-      }
-    } / count
+    // Mean per-frame hint score.
+    let hintScore = screenshots.reduce(0.0) { $0 + frameScore($1) } / count
 
     // Blend signals; penalize heavy duplication and redaction.
     var score =
@@ -58,6 +52,25 @@ enum ConfidenceEstimator {
       + (redactedRatio > 0 ? " · private \(pct(redactedRatio))" : "")
 
     return Result(score: score, summary: summary, needsReview: score < reviewThreshold)
+  }
+
+  /// Per-frame evidence-quality score in [0, 1].
+  /// A NULL hint means the frame was captured BEFORE the hint feature existed — it
+  /// must NOT be scored as "low" (0.25) when it still carries app/window metadata,
+  /// or reprocessing historical days spuriously flags metadata-rich cards for
+  /// review. Fall back to metadata presence instead. (Found via real-data review.)
+  private static func frameScore(_ shot: Screenshot) -> Double {
+    switch shot.confidenceHint {
+    case "high": return 1.0
+    case "medium": return 0.6
+    case "low": return 0.25
+    default:
+      let hasApp = shot.activeAppName != nil
+      let hasTitle = shot.windowTitle != nil
+      if hasApp && hasTitle { return 0.6 }
+      if hasApp || hasTitle { return 0.45 }
+      return 0.25
+    }
   }
 
   private static func ratio(_ shots: [Screenshot], _ predicate: (Screenshot) -> Bool) -> Double {

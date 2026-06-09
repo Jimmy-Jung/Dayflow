@@ -241,4 +241,26 @@ final class EvidencePipelineTests: XCTestCase {
       metadata: meta(app: "VS Code", title: "f.swift"), ocr: nil, isNearDuplicate: false)
     XCTAssertEqual(hint, "medium")
   }
+
+  // MARK: - ConfidenceEstimator NULL-hint fallback (real-data fix)
+
+  func testNullHintWithMetadataNotFlagged() {
+    // Frames captured before the hint feature: NULL hint but app+title present.
+    // Must NOT be scored as low (would spuriously flag reprocessed historical cards).
+    let shots = (0..<10).map {
+      shot(id: Int64($0), at: 1000 + $0 * 10, app: "VS Code", title: "f.swift", hint: nil)
+    }
+    let result = ConfidenceEstimator.estimate(for: shots)
+    XCTAssertFalse(result.needsReview)
+    XCTAssertGreaterThan(result.score, ConfidenceEstimator.reviewThreshold)
+  }
+
+  func testNullHintNoMetadataStaysLow() {
+    // NULL hint AND no app/title → genuinely low confidence.
+    let shots = (0..<10).map {
+      shot(id: Int64($0), at: 1000 + $0 * 10, app: nil, title: nil, hint: nil)
+    }
+    let result = ConfidenceEstimator.estimate(for: shots)
+    XCTAssertTrue(result.needsReview)
+  }
 }
