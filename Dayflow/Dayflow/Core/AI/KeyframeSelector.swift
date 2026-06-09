@@ -68,6 +68,13 @@ enum KeyframeSelector {
 
     chosen.insert(0)
     chosen.insert(lastIndex)
+
+    // Observable §10 metric: LLM-input frame reduction. Real-data verification reads
+    // these logs (or compares llm_calls batch timing) for the 40–70% target.
+    let kept = chosen.count
+    let reduction = Int((1.0 - Double(kept) / Double(sorted.count)) * 100)
+    print("📐 KeyframeSelector: kept \(kept)/\(sorted.count) frames (\(reduction)% fewer to LLM)")
+
     return chosen.sorted().map { sorted[$0] }
   }
 
