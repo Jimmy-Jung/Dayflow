@@ -378,7 +378,8 @@ final class ScreenRecorder: NSObject, @unchecked Sendable {
           jpegData,
           capturedAt: captureTime,
           idleSecondsAtCapture: idleSecondsAtCapture,
-          metadata: metadata
+          metadata: metadata,
+          evidence: .redacted(imageHash: nil)
         )
         dbg("🔒 Screenshot redacted for blocked foreground application")
         return
@@ -417,12 +418,22 @@ final class ScreenRecorder: NSObject, @unchecked Sendable {
         throw ScreenRecorderError.imageConversionFailed
       }
 
+      // 4b. Local evidence preprocessing (HANDOFF/12 §5/§6): perceptual hash,
+      // near-duplicate flag vs. the previous frame, opt-in OCR, browser/dev signals.
+      let previousHash = StorageManager.shared.lastScreenshotImageHash()
+      let evidence = EvidencePreprocessor.process(
+        image: image,
+        metadata: metadata,
+        previousHash: previousHash
+      )
+
       // 5. Save to disk and register in the database
       let fileURL = try saveScreenshotData(
         jpegData,
         capturedAt: captureTime,
         idleSecondsAtCapture: idleSecondsAtCapture,
-        metadata: metadata
+        metadata: metadata,
+        evidence: evidence
       )
 
       dbg("📸 Screenshot saved: \(fileURL.lastPathComponent) (\(jpegData.count / 1024)KB)")
@@ -456,7 +467,8 @@ final class ScreenRecorder: NSObject, @unchecked Sendable {
     _ jpegData: Data,
     capturedAt: Date,
     idleSecondsAtCapture: Int?,
-    metadata: ActivityMetadata
+    metadata: ActivityMetadata,
+    evidence: CaptureEvidence = .empty
   ) throws -> URL {
     let fileURL = StorageManager.shared.nextScreenshotURL()
     try jpegData.write(to: fileURL)
@@ -465,7 +477,8 @@ final class ScreenRecorder: NSObject, @unchecked Sendable {
       url: fileURL,
       capturedAt: capturedAt,
       idleSecondsAtCapture: idleSecondsAtCapture,
-      metadata: metadata
+      metadata: metadata,
+      evidence: evidence
     )
     return fileURL
   }

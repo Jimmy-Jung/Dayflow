@@ -28,6 +28,8 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>112</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Dayflow can read the active browser tab's address to label your timeline more accurately. This is optional, off by default, and only the domain is stored.</string>
 	<key>NSScreenCaptureUsageDescription</key>
 	<string>Dayflow uses screen access to create your timeline. Recordings stay on your Mac and you can pause or delete them anytime.</string>
 	<key>SUAllowsAutomaticUpdates</key>

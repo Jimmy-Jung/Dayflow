@@ -21,6 +21,25 @@ enum RecordingPrivacyPreferences {
     "recordingPrivacyBlockedApplicationIdentifiers"
   private static let didSeedDefaultSecretAppsKey = "recordingPrivacyDidSeedDefaultSecretApps"
 
+  // HANDOFF/12 §11-2, §11-4: OCR and browser-URL collection are higher-leakage
+  // signals than the image, so they are OPT-IN (default off). The privacy gate for
+  // blocked apps still applies independently and always wins.
+  private static let localOCREnabledKey = "recordingPrivacyLocalOCREnabled"
+  private static let collectBrowserURLKey = "recordingPrivacyCollectBrowserURL"
+
+  /// Whether on-device OCR text extraction/storage is enabled. Default: false.
+  static var isLocalOCREnabled: Bool {
+    get { UserDefaults.standard.bool(forKey: localOCREnabledKey) }
+    set { UserDefaults.standard.set(newValue, forKey: localOCREnabledKey) }
+  }
+
+  /// Whether browser active-tab host collection is enabled. Default: false.
+  /// Even when on, only the host is stored — query strings are always redacted.
+  static var isBrowserURLCollectionEnabled: Bool {
+    get { UserDefaults.standard.bool(forKey: collectBrowserURLKey) }
+    set { UserDefaults.standard.set(newValue, forKey: collectBrowserURLKey) }
+  }
+
   private static let defaultSecretAppNames: Set<String> = [
     "1password",
     "authy",

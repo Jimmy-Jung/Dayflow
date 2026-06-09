@@ -35,6 +35,28 @@ struct ActivityMetadata: Sendable, Equatable {
   let windowTitle: String?
   let displayId: Int?
   let privacyState: PrivacyState
+  // Higher-value evidence signals (HANDOFF/12 §7-3). Both opt-in and nil for
+  // redacted captures; routed into CaptureEvidence by the recorder.
+  let browserHost: String?
+  let gitBranch: String?
+
+  init(
+    activeAppName: String?,
+    bundleId: String?,
+    windowTitle: String?,
+    displayId: Int?,
+    privacyState: PrivacyState,
+    browserHost: String? = nil,
+    gitBranch: String? = nil
+  ) {
+    self.activeAppName = activeAppName
+    self.bundleId = bundleId
+    self.windowTitle = windowTitle
+    self.displayId = displayId
+    self.privacyState = privacyState
+    self.browserHost = browserHost
+    self.gitBranch = gitBranch
+  }
 
   static let empty = ActivityMetadata(
     activeAppName: nil,
@@ -81,14 +103,22 @@ enum ActivityMetadataCollector {
       )
     }
 
-    let windowTitle = frontmostWindowTitle(pid: app.processIdentifier)
+    let windowTitle = frontmostWindowTitle(pid: app.processIdentifier)?.nonEmpty
+
+    // Higher-value signals (opt-in, fail-safe to nil). Only collected on the
+    // normal (non-redacted) path so blocked apps never leak a URL or branch.
+    let browserHost = ActivitySignalProbe.browserHost(bundleId: bundleId?.nonEmpty)
+    let gitBranch = ActivitySignalProbe.gitBranchHint(
+      bundleId: bundleId?.nonEmpty, windowTitle: windowTitle)
 
     return ActivityMetadata(
       activeAppName: appName?.nonEmpty,
       bundleId: bundleId?.nonEmpty,
-      windowTitle: windowTitle?.nonEmpty,
+      windowTitle: windowTitle,
       displayId: displayIdValue,
-      privacyState: .normal
+      privacyState: .normal,
+      browserHost: browserHost,
+      gitBranch: gitBranch
     )
   }
 
