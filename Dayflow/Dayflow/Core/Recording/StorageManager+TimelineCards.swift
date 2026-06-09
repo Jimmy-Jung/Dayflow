@@ -77,6 +77,11 @@ extension StorageManager {
 
     let endTs = Int(endDate.timeIntervalSince1970)
 
+    // Confidence from the evidence frames covering this card's time range
+    // (HANDOFF/12 §5-3). Computed before the write to avoid a nested DB read.
+    let evidenceShots = fetchScreenshotsInTimeRange(startTs: startTs, endTs: endTs)
+    let confidence = ConfidenceEstimator.estimate(for: evidenceShots)
+
     try? timedWrite("saveTimelineCardShell") {
       db in
       // Encode metadata as an object for forward-compatibility
@@ -97,14 +102,16 @@ extension StorageManager {
         sql: """
               INSERT INTO timeline_cards(
                   batch_id, start, end, start_ts, end_ts, day, title,
-                  summary, category, subcategory, detailed_summary, metadata
+                  summary, category, subcategory, detailed_summary, metadata,
+                  confidence, source_summary, needs_review
                   -- video_summary_url is omitted here
               )
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           """,
         arguments: [
           batchId, card.startTimestamp, card.endTimestamp, startTs, endTs, dayString, card.title,
           card.summary, card.category, card.subcategory, card.detailedSummary, metadataString,
+          confidence.score, confidence.summary, confidence.needsReview ? 1 : 0,
         ])
       lastId = db.lastInsertedRowID
     }
@@ -189,6 +196,34 @@ extension StorageManager {
     let trimmed = category.trimmingCharacters(in: .whitespacesAndNewlines)
     guard trimmed.isEmpty == false else { return }
 
+    // Read the existing category + time range so we can log the correction with
+    // the dominant evidence signals (HANDOFF/12 §7-2). Done before the write.
+    let context: (old: String?, start: Int, end: Int)? = try? timedRead(
+      "updateTimelineCardCategory.read"
+    ) { db in
+      guard
+        let row = try Row.fetchOne(
+          db,
+          sql: "SELECT category, start_ts, end_ts FROM timeline_cards WHERE id = ?",
+          arguments: [cardId])
+      else { return nil }
+      return (row["category"], row["start_ts"] ?? 0, row["end_ts"] ?? 0)
+    } ?? nil
+
+    // Derive the dominant app / bundle / title / host across the card's frames so
+    // a repeated correction can later become a SOFT personalization rule.
+    var bundleId: String?
+    var appName: String?
+    var windowTitle: String?
+    var browserHost: String?
+    if let context, context.end > context.start {
+      let shots = fetchScreenshotsInTimeRange(startTs: context.start, endTs: context.end)
+      bundleId = Self.mostCommon(shots.compactMap { $0.bundleId })
+      appName = Self.mostCommon(shots.compactMap { $0.activeAppName })
+      windowTitle = Self.mostCommon(shots.compactMap { $0.windowTitle })
+      browserHost = Self.mostCommon(shots.compactMap { $0.browserHost })
+    }
+
     try? timedWrite("updateTimelineCardCategory") { db in
       try db.execute(
         sql: """
@@ -196,7 +231,27 @@ extension StorageManager {
               SET category = ?
               WHERE id = ?
           """, arguments: [trimmed, cardId])
+
+      try db.execute(
+        sql: """
+              INSERT INTO category_edits(
+                card_id, bundle_id, app_name, window_title, browser_host,
+                old_category, new_category, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          """,
+        arguments: [
+          cardId, bundleId, appName, windowTitle, browserHost,
+          context?.old, trimmed, Int(Date().timeIntervalSince1970),
+        ])
     }
+  }
+
+  /// Most frequent value in a list (ties broken by first occurrence), or nil.
+  static func mostCommon(_ values: [String]) -> String? {
+    guard !values.isEmpty else { return nil }
+    var counts: [String: Int] = [:]
+    for value in values { counts[value, default: 0] += 1 }
+    return counts.max { lhs, rhs in lhs.value < rhs.value }?.key
   }
 
   // MARK: - Onboarding Card
@@ -344,7 +399,10 @@ extension StorageManager {
             videoSummaryURL: row["video_summary_url"],
             otherVideoSummaryURLs: nil,
             appSites: appSites,
-            isBackupGenerated: isBackupGenerated
+            isBackupGenerated: isBackupGenerated,
+            confidence: row["confidence"],
+            sourceSummary: row["source_summary"],
+            needsReview: (row["needs_review"] as Int? ?? 0) != 0
           )
         }
       }) ?? []
@@ -459,7 +517,10 @@ extension StorageManager {
           videoSummaryURL: row["video_summary_url"],
           otherVideoSummaryURLs: nil,
           appSites: appSites,
-          isBackupGenerated: isBackupGenerated
+          isBackupGenerated: isBackupGenerated,
+          confidence: row["confidence"],
+          sourceSummary: row["source_summary"],
+          needsReview: (row["needs_review"] as Int? ?? 0) != 0
         )
       }
     }
@@ -520,7 +581,10 @@ extension StorageManager {
           videoSummaryURL: row["video_summary_url"],
           otherVideoSummaryURLs: nil,
           appSites: appSites,
-          isBackupGenerated: isBackupGenerated
+          isBackupGenerated: isBackupGenerated,
+          confidence: row["confidence"],
+          sourceSummary: row["source_summary"],
+          needsReview: (row["needs_review"] as Int? ?? 0) != 0
         )
       }
     }
@@ -918,17 +982,30 @@ extension StorageManager {
         // Calculate the day string using 4 AM boundary rules
         let (dayString, _, _) = startDate.getDayInfoFor4AMBoundary()
 
+        // Confidence from evidence frames covering this card (HANDOFF/12 §5-3).
+        // Queried on the same connection to avoid a nested read deadlock.
+        let evidenceRows = try Row.fetchAll(
+          db,
+          sql: """
+                SELECT * FROM screenshots
+                WHERE captured_at >= ? AND captured_at <= ? AND is_deleted = 0
+            """, arguments: [startTs, endTs])
+        let confidence = ConfidenceEstimator.estimate(
+          for: evidenceRows.map { screenshot(from: $0) })
+
         try db.execute(
           sql: """
                 INSERT INTO timeline_cards(
                     batch_id, start, end, start_ts, end_ts, day, title,
-                    summary, category, subcategory, detailed_summary, metadata
+                    summary, category, subcategory, detailed_summary, metadata,
+                    confidence, source_summary, needs_review
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
           arguments: [
             batchId, card.startTimestamp, card.endTimestamp, startTs, endTs, dayString, card.title,
             card.summary, card.category, card.subcategory, card.detailedSummary, metadataString,
+            confidence.score, confidence.summary, confidence.needsReview ? 1 : 0,
           ])
 
         // Capture the ID of the inserted card

@@ -24,6 +24,16 @@ extension GeminiDirectProvider {
       LLMOutputLanguagePreferences.languageInstruction(forJSON: true)
       .map { "\n\n\($0)" } ?? ""
 
+    // Soft personalization hints from the user's category-edit history
+    // (HANDOFF/12 §7-2). Injected as weak priors only — never a hard override.
+    let personalizationBlock: String = {
+      guard
+        let text = PersonalizationRules.contextText(
+          from: StorageManager.shared.recentCategoryEdits(limit: 500))
+      else { return "" }
+      return "\n\n---\n\n## Personalization\n\n\(text)\n"
+    }()
+
     let basePrompt = """
       # Timeline Card Generation
 
@@ -76,7 +86,7 @@ extension GeminiDirectProvider {
       ## Category
 
       \(categoriesSection(from: context.categories))
-
+      \(personalizationBlock)
       ---
 
       ## Distractions
