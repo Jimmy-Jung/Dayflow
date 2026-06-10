@@ -169,6 +169,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Start daily recap generation scheduler (checks every 5 minutes)
     DailyRecapScheduler.shared.start()
 
+    // CloudKit sync (HANDOFF/13). Both calls return immediately unless the user
+    // has opted into sync (default OFF), so the normal recording path is
+    // untouched. Requires the provisioned iCloud container to reach the network.
+    CloudSyncManager.shared.startIfEnabled()
+    RecordingLeaseController.shared.startIfEnabled()
+
     // Observe recording state
     analyticsSub = AppState.shared.$isRecording
       .removeDuplicates()

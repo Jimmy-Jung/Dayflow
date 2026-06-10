@@ -83,6 +83,8 @@ extension StorageManager {
                 INSERT INTO timeline_review_ratings (start_ts, end_ts, rating)
                 VALUES (?, ?, ?)
             """, arguments: [fragment.start, fragment.end, fragment.rating])
+        // HANDOFF/13 §C3: ratings sync by uuid, match by time range.
+        try stampInsertedRow(db, table: .timelineReviewRatings, rowId: db.lastInsertedRowID)
       }
 
       try db.execute(
@@ -90,6 +92,7 @@ extension StorageManager {
               INSERT INTO timeline_review_ratings (start_ts, end_ts, rating)
               VALUES (?, ?, ?)
           """, arguments: [startTs, endTs, rating])
+      try stampInsertedRow(db, table: .timelineReviewRatings, rowId: db.lastInsertedRowID)
     }
   }
 

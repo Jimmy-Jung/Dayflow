@@ -18,6 +18,8 @@ extension StorageManager {
             batchId, obs.startTs, obs.endTs, obs.observation,
             obs.metadata, obs.llmModel,
           ])
+        // HANDOFF/13 §4: stamp device-stable sync key + updated_at hint.
+        try stampInsertedRow(db, table: .observations, rowId: db.lastInsertedRowID)
       }
     }
   }

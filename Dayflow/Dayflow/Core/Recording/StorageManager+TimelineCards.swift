@@ -114,6 +114,10 @@ extension StorageManager {
           confidence.score, confidence.summary, confidence.needsReview ? 1 : 0,
         ])
       lastId = db.lastInsertedRowID
+      if let id = lastId {
+        // HANDOFF/13 §16: stamp sync key + capture-time timezone.
+        try stampInsertedRow(db, table: .timelineCards, rowId: id, setTimezone: true)
+      }
     }
     return lastId
   }
@@ -164,6 +168,8 @@ extension StorageManager {
           """,
         arguments: [recordId]
       )
+      // HANDOFF/13 §D1: tombstone so the deletion propagates to other devices.
+      try stampDeletedRow(db, table: .timelineCards, rowId: recordId)
 
       guard endTs > startTs else { return }
 
@@ -318,6 +324,8 @@ extension StorageManager {
           "",  // detailed_summary - empty string (not NULL, as GRDB decode expects non-optional)
           metadataString,
         ])
+      // HANDOFF/13 §16: stamp sync key + capture-time timezone.
+      try stampInsertedRow(db, table: .timelineCards, rowId: db.lastInsertedRowID, setTimezone: true)
     }
   }
 
@@ -892,16 +900,19 @@ extension StorageManager {
       }
 
       // Soft delete existing cards in the range using timestamp columns
-      // Preserve error cards (category='System') from other batches so they remain visible
+      // Preserve error cards (category='System') from other batches so they remain visible.
+      // HANDOFF/13 §D1: also tombstone (deleted_at) + bump updated_at so the bulk
+      // reprocessing delete propagates to other devices instead of vanishing.
+      let deleteTs = Int(Date().timeIntervalSince1970)
       try db.execute(
         sql: """
               UPDATE timeline_cards
-              SET is_deleted = 1
+              SET is_deleted = 1, deleted_at = ?, updated_at = ?
               WHERE ((start_ts < ? AND end_ts > ?)
                  OR (start_ts >= ? AND start_ts < ?))
                  AND is_deleted = 0
                  AND (category != 'System' OR batch_id = ?)
-          """, arguments: [toTs, fromTs, fromTs, toTs, batchId])
+          """, arguments: [deleteTs, deleteTs, toTs, fromTs, fromTs, toTs, batchId])
 
       // Verify soft deletion (count remaining active cards)
       let remainingCount =
@@ -1010,6 +1021,8 @@ extension StorageManager {
 
         // Capture the ID of the inserted card
         let insertedId = db.lastInsertedRowID
+        // HANDOFF/13 §16: stamp sync key + capture-time timezone.
+        try stampInsertedRow(db, table: .timelineCards, rowId: insertedId, setTimezone: true)
         insertedIds.append(insertedId)
       }
     }

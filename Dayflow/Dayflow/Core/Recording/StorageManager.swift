@@ -762,6 +762,88 @@ final class StorageManager: StorageManaging, @unchecked Sendable {
               CREATE INDEX IF NOT EXISTS idx_category_edits_created_at
               ON category_edits(created_at DESC);
           """)
+
+      // ─────────────────────────────────────────────────────────────────────
+      // HANDOFF/13 Phase 1 — CloudKit sync foundation columns.
+      //
+      // Adds device-independent identity (uuid), a conflict-resolution hint
+      // (updated_at), soft-delete tombstones (deleted_at), and capture-time
+      // timezone (source_timezone — timeline_cards only, HANDOFF/13 §16) to the
+      // tables that will sync. All columns are NULLABLE: SQLite forbids a
+      // non-constant DEFAULT on ALTER TABLE ADD COLUMN, so existing rows are
+      // backfilled in this same transaction and live INSERT paths stamp the
+      // values (StorageManager+Sync.swift). Idempotent: re-running skips
+      // already-present columns and only touches rows still NULL.
+      //
+      // NOTE: actual sync is opt-in / default-OFF (HANDOFF/13 §15, §9). These
+      // columns are inert bookkeeping until the sync engine is enabled.
+      // ─────────────────────────────────────────────────────────────────────
+      func addColumnIfMissing(_ table: String, _ column: String, _ type: String) throws {
+        let existing = try db.columns(in: table).map { $0.name }
+        if !existing.contains(column) {
+          try db.execute(sql: "ALTER TABLE \(table) ADD COLUMN \(column) \(type);")
+          print("✅ [sync] Added \(column) to \(table)")
+        }
+      }
+
+      // uuid + updated_at + deleted_at on the AUTOINCREMENT-keyed sync tables
+      // (HANDOFF/13 §4: cards/observations/ratings lack a device-stable key).
+      let uuidKeyedTables = ["timeline_cards", "observations", "timeline_review_ratings"]
+      for table in uuidKeyedTables {
+        try addColumnIfMissing(table, "uuid", "TEXT")
+        try addColumnIfMissing(table, "updated_at", "INTEGER")
+        try addColumnIfMissing(table, "deleted_at", "INTEGER")
+        // Encoded CKRecord system fields (change tag etc.) so uploads update the
+        // existing server record instead of clobbering it (HANDOFF/13 §4).
+        try addColumnIfMissing(table, "ck_system_fields", "BLOB")
+      }
+      // timeline_cards also records the capture-time timezone (HANDOFF/13 §16),
+      // so the 4 AM `day` boundary stays fixed across devices/travel.
+      try addColumnIfMissing("timeline_cards", "source_timezone", "TEXT")
+
+      // Natural-key sync tables already carry updated_at; they only need a
+      // tombstone column for delete propagation.
+      for table in ["journal_entries", "day_goals", "daily_standup_entries"] {
+        try addColumnIfMissing(table, "deleted_at", "INTEGER")
+      }
+
+      // Backfill: every existing row gets a stable uuid so it becomes eligible
+      // for the first sync upload. Done in this transaction so a crash mid-
+      // migration can't leave key-less rows (HANDOFF/13 §H2). uuid is unique per
+      // row because UUID() is generated per iteration.
+      for table in uuidKeyedTables {
+        let ids = try Int64.fetchAll(db, sql: "SELECT id FROM \(table) WHERE uuid IS NULL")
+        for id in ids {
+          try db.execute(
+            sql: "UPDATE \(table) SET uuid = ? WHERE id = ?",
+            arguments: [UUID().uuidString, id])
+        }
+      }
+      // Seed updated_at where NULL. cards/observations carry a created_at text
+      // column (parse as UTC); ratings have none, so anchor on start_ts.
+      try db.execute(
+        sql: "UPDATE timeline_cards SET updated_at = CAST(strftime('%s', created_at) AS INTEGER) WHERE updated_at IS NULL AND created_at IS NOT NULL;")
+      try db.execute(
+        sql: "UPDATE observations SET updated_at = CAST(strftime('%s', created_at) AS INTEGER) WHERE updated_at IS NULL AND created_at IS NOT NULL;")
+      try db.execute(
+        sql: "UPDATE timeline_review_ratings SET updated_at = start_ts WHERE updated_at IS NULL;")
+      // Safety net for any rows whose created_at failed to parse.
+      let nowTs = Int(Date().timeIntervalSince1970)
+      for table in uuidKeyedTables {
+        try db.execute(
+          sql: "UPDATE \(table) SET updated_at = ? WHERE updated_at IS NULL;",
+          arguments: [nowTs])
+      }
+
+      // Enforce uuid uniqueness without a column constraint (ALTER TABLE can't
+      // add UNIQUE): a partial index, NULL-tolerant for any future unstamped row.
+      for table in uuidKeyedTables {
+        try db.execute(
+          sql: "CREATE UNIQUE INDEX IF NOT EXISTS idx_\(table)_uuid ON \(table)(uuid) WHERE uuid IS NOT NULL;")
+        // Sync-eligibility scan path: rows changed since the last pushed cursor.
+        try db.execute(
+          sql: "CREATE INDEX IF NOT EXISTS idx_\(table)_updated_at ON \(table)(updated_at);")
+      }
     }
   }
 
