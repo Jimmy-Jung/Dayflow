@@ -73,7 +73,7 @@ struct ChatCLITestView: View {
   func runTest() {
     guard !isTesting else { return }
     guard let tool = selectedTool else {
-      resultMessage = "Pick ChatGPT or Claude first."
+      resultMessage = String(localized: "Pick ChatGPT or Claude first.")
       return
     }
 
@@ -148,14 +148,18 @@ struct ChatCLITestView: View {
             } else {
               if stderrTrimmed.isEmpty {
                 if tool == .claude {
-                  resultMessage =
-                    "Claude CLI returned an error. You may need to sign in — run 'claude login' in Terminal."
+                  resultMessage = String(
+                    localized:
+                      "Claude CLI returned an error. You may need to sign in — run 'claude login' in Terminal.")
                 } else {
-                  resultMessage =
-                    "Codex CLI returned an error. You may need to sign in — run 'codex auth' in Terminal."
+                  resultMessage = String(
+                    localized:
+                      "Codex CLI returned an error. You may need to sign in — run 'codex auth' in Terminal.")
                 }
               } else {
-                resultMessage = "CLI error: \(stderrTrimmed.prefix(150))"
+                resultMessage = String.localizedStringWithFormat(
+                  NSLocalizedString("CLI error: %@", comment: ""),
+                  String(stderrTrimmed.prefix(150)))
               }
               captureChatCLITestFailed(
                 for: tool,
@@ -173,14 +177,14 @@ struct ChatCLITestView: View {
           let passed = parseForSuccess(cliResult, for: tool)
           success = passed
           if passed {
-            resultMessage = "CLI is working!"
+            resultMessage = String(localized: "CLI is working!")
             captureChatCLITestSucceeded(
               for: tool,
               durationMs: durationMs,
               exitCode: Int(cliResult.exitCode)
             )
           } else if cliResult.stdout.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            resultMessage = "CLI returned empty response. Make sure you're signed in."
+            resultMessage = String(localized: "CLI returned empty response. Make sure you're signed in.")
             captureChatCLITestFailed(
               for: tool,
               durationMs: durationMs,
@@ -189,7 +193,9 @@ struct ChatCLITestView: View {
             )
           } else {
             let preview = cliResult.stdout.prefix(100)
-            resultMessage = "Got: \"\(preview)\" — expected '4'"
+            resultMessage = String.localizedStringWithFormat(
+              NSLocalizedString("Got: \"%@\" — expected '4'", comment: ""),
+              String(preview))
             captureChatCLITestFailed(
               for: tool,
               durationMs: durationMs,
@@ -302,7 +308,10 @@ struct ChatCLITestView: View {
         domain: "ChatCLITest", code: 1,
         userInfo: [
           NSLocalizedDescriptionKey:
-            "\(tool.shortName) CLI not found. Install it and run '\(tool == .codex ? "codex auth" : "claude login")' in Terminal."
+            String.localizedStringWithFormat(
+              NSLocalizedString("%@ CLI not found. Install it and run '%@' in Terminal.", comment: ""),
+              tool.shortName,
+              tool == .codex ? "codex auth" : "claude login")
         ])
     }
 
@@ -372,9 +381,11 @@ struct ChatCLITestView: View {
     // Return the correct message based on which tool we're actually testing
     switch tool {
     case .claude:
-      return "Claude CLI is not signed in. Run 'claude login' in Terminal to authenticate."
+      return String(
+        localized: "Claude CLI is not signed in. Run 'claude login' in Terminal to authenticate.")
     case .codex:
-      return "Codex CLI is not signed in. Run 'codex auth' in Terminal to authenticate."
+      return String(
+        localized: "Codex CLI is not signed in. Run 'codex auth' in Terminal to authenticate.")
     }
   }
 }
@@ -400,9 +411,9 @@ enum CLITool: String, CaseIterable {
   var subtitle: String {
     switch self {
     case .codex:
-      return "OpenAI's ChatGPT desktop tooling with codex CLI"
+      return String(localized: "OpenAI's ChatGPT desktop tooling with codex CLI")
     case .claude:
-      return "Anthropic's Claude Code command-line helper"
+      return String(localized: "Anthropic's Claude Code command-line helper")
     }
   }
 
@@ -456,15 +467,15 @@ enum CLIDetectionState: Equatable {
   var statusLabel: String {
     switch self {
     case .unknown:
-      return "Not checked"
+      return String(localized: "Not checked")
     case .checking:
-      return "Checking…"
+      return String(localized: "Checking…")
     case .installed:
-      return "Installed"
+      return String(localized: "Installed")
     case .notFound:
-      return "Not installed"
+      return String(localized: "Not installed")
     case .failed:
-      return "Error"
+      return String(localized: "Error")
     }
   }
 

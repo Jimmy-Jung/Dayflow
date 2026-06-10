@@ -436,7 +436,7 @@ struct SettingsProvidersTabView: View {
   ) -> some View {
     SettingsSection(title: title, subtitle: subtitle) {
       VStack(alignment: .leading, spacing: 18) {
-        Text(intro)
+        Text(NSLocalizedString(intro, comment: ""))
           .font(.custom("Figtree", size: 12))
           .foregroundColor(SettingsStyle.secondary)
           .fixedSize(horizontal: false, vertical: true)
@@ -464,11 +464,11 @@ struct SettingsProvidersTabView: View {
     VStack(alignment: .leading, spacing: 12) {
       Toggle(isOn: config.isEnabled) {
         VStack(alignment: .leading, spacing: 3) {
-          Text(config.heading)
+          Text(NSLocalizedString(config.heading, comment: ""))
             .font(.custom("Figtree", size: 14))
             .fontWeight(.semibold)
             .foregroundColor(SettingsStyle.text)
-          Text(config.description)
+          Text(NSLocalizedString(config.description, comment: ""))
             .font(.custom("Figtree", size: 12))
             .foregroundColor(SettingsStyle.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -529,11 +529,14 @@ private struct LocalModelUpgradeBanner: View {
           .background(Color(red: 0.12, green: 0.09, blue: 0.02))
           .clipShape(RoundedRectangle(cornerRadius: 8))
         VStack(alignment: .leading, spacing: 4) {
-          Text("Upgrade to \(preset.displayName)")
+          Text(
+            String.localizedStringWithFormat(
+              NSLocalizedString("Upgrade to %@", comment: ""),
+              preset.displayName))
             .font(.custom("Figtree", size: 16))
             .fontWeight(.semibold)
             .foregroundColor(.white)
-          Text("Upgrade to Qwen3VL for a big improvement in quality.")
+          Text(NSLocalizedString("Upgrade to Qwen3VL for a big improvement in quality.", comment: ""))
             .font(.custom("Figtree", size: 13))
             .foregroundColor(.white.opacity(0.8))
         }
@@ -547,7 +550,7 @@ private struct LocalModelUpgradeBanner: View {
               .font(.system(size: 12))
               .foregroundColor(Color(red: 0.76, green: 1, blue: 0.74))
               .padding(.top, 2)
-            Text(bullet)
+            Text(NSLocalizedString(bullet, comment: ""))
               .font(.custom("Figtree", size: 13))
               .foregroundColor(.white.opacity(0.85))
           }
@@ -646,11 +649,16 @@ struct LocalModelUpgradeSheet: View {
       VStack(alignment: .leading, spacing: 24) {
         HStack {
           VStack(alignment: .leading, spacing: 6) {
-            Text("Upgrade to \(preset.displayName)")
+            Text(
+              String.localizedStringWithFormat(
+                NSLocalizedString("Upgrade to %@", comment: ""),
+                preset.displayName))
               .font(.custom("Figtree", size: 22))
               .fontWeight(.semibold)
             Text(
-              "Follow the steps below, run a quick test, and Dayflow will switch you over automatically."
+              NSLocalizedString(
+                "Follow the steps below, run a quick test, and Dayflow will switch you over automatically.",
+                comment: "")
             )
             .font(.custom("Figtree", size: 13))
             .foregroundColor(SettingsStyle.secondary)
@@ -671,7 +679,7 @@ struct LocalModelUpgradeSheet: View {
               Image(systemName: "sparkle")
                 .font(.system(size: 12))
                 .foregroundColor(SettingsStyle.ink)
-              Text(bullet)
+              Text(NSLocalizedString(bullet, comment: ""))
                 .font(.custom("Figtree", size: 13))
                 .foregroundColor(SettingsStyle.text)
             }
@@ -712,7 +720,11 @@ struct LocalModelUpgradeSheet: View {
         )
 
         Text(
-          "Once the test succeeds, Dayflow updates your settings to \(preset.displayName) automatically."
+          String.localizedStringWithFormat(
+            NSLocalizedString(
+              "Once the test succeeds, Dayflow updates your settings to %@ automatically.",
+              comment: ""),
+            preset.displayName)
         )
         .font(.custom("Figtree", size: 12))
         .foregroundColor(SettingsStyle.secondary)
@@ -739,10 +751,10 @@ struct LocalModelUpgradeSheet: View {
   private func instructionView(for engine: LocalEngine) -> some View {
     let instruction = preset.instructions(for: engine == .custom ? .ollama : engine)
     VStack(alignment: .leading, spacing: 12) {
-      Text(instruction.title)
+      Text(NSLocalizedString(instruction.title, comment: ""))
         .font(.custom("Figtree", size: 16))
         .fontWeight(.semibold)
-      Text(instruction.subtitle)
+      Text(NSLocalizedString(instruction.subtitle, comment: ""))
         .font(.custom("Figtree", size: 13))
         .foregroundColor(SettingsStyle.secondary)
       VStack(alignment: .leading, spacing: 6) {
@@ -752,7 +764,7 @@ struct LocalModelUpgradeSheet: View {
               .font(.custom("Figtree", size: 13))
               .foregroundColor(SettingsStyle.secondary)
               .frame(width: 18, alignment: .leading)
-            Text(bullet)
+            Text(NSLocalizedString(bullet, comment: ""))
               .font(.custom("Figtree", size: 13))
               .foregroundColor(SettingsStyle.text)
           }
@@ -781,7 +793,7 @@ struct LocalModelUpgradeSheet: View {
       }
 
       if let note = instruction.note {
-        Text(note)
+        Text(NSLocalizedString(note, comment: ""))
           .font(.custom("Figtree", size: 12))
           .foregroundColor(SettingsStyle.secondary)
       }

@@ -7,7 +7,10 @@ enum LocalLLMTestConstants {
     width: 1280, height: 720)
   static let prompt = "What color is this image? Answer with a single word."
   static let slowMachineMessage =
-    "It took longer than 30 seconds, so your machine doesn't appear powerful enough to run this model locally."
+    String(
+      localized:
+        "It took longer than 30 seconds, so your machine doesn't appear powerful enough to run this model locally."
+    )
   static let maxLatency: TimeInterval = 30
 }
 
@@ -165,7 +168,7 @@ struct LocalLLMTestView: View {
     resultMessage = nil
 
     guard let url = LocalEndpointUtilities.chatCompletionsURL(baseURL: baseURL) else {
-      resultMessage = "Invalid base URL"
+      resultMessage = String(localized: "Invalid base URL")
       isTesting = false
       onTestComplete(false)
       return
@@ -218,7 +221,7 @@ struct LocalLLMTestView: View {
           return
         }
         guard let http = response as? HTTPURLResponse, let data = data else {
-          self.resultMessage = "No response"
+          self.resultMessage = String(localized: "No response")
           self.isTesting = false
           self.onTestComplete(false)
           return
@@ -231,7 +234,10 @@ struct LocalLLMTestView: View {
           self.onTestComplete(true)
         } else {
           let body = String(data: data, encoding: .utf8) ?? ""
-          self.resultMessage = "HTTP \(http.statusCode): \(body)"
+          self.resultMessage = String.localizedStringWithFormat(
+            NSLocalizedString("HTTP %lld: %@", comment: ""),
+            http.statusCode,
+            body)
           self.isTesting = false
           self.onTestComplete(false)
         }

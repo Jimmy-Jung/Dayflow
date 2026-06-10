@@ -211,7 +211,7 @@ struct SettingsView: View {
         selectedTab = tab
       }
     } label: {
-      Text(tab.title)
+      Text(NSLocalizedString(tab.title, comment: ""))
         .font(.custom("Figtree", size: 13))
         .fontWeight(.semibold)
         .foregroundColor(.black.opacity(selectedTab == tab ? 0.9 : 0.55))

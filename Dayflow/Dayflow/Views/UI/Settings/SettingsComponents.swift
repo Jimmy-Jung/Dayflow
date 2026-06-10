@@ -1,5 +1,9 @@
 import SwiftUI
 
+private func settingsLocalizedString(_ key: String) -> String {
+  NSLocalizedString(key, comment: "")
+}
+
 // MARK: - Settings design system
 //
 // One visual language, enforced here. If you find yourself reaching outside
@@ -73,12 +77,12 @@ struct SettingsSection<Content: View, Trailing: View>: View {
     VStack(alignment: .leading, spacing: 0) {
       HStack(alignment: .firstTextBaseline, spacing: 16) {
         VStack(alignment: .leading, spacing: 4) {
-          Text(title)
+          Text(settingsLocalizedString(title))
             .font(.custom("Figtree", size: 17))
             .fontWeight(.semibold)
             .foregroundColor(SettingsStyle.text)
           if let subtitle {
-            Text(subtitle)
+            Text(settingsLocalizedString(subtitle))
               .font(.custom("Figtree", size: 12))
               .foregroundColor(SettingsStyle.secondary)
               .fixedSize(horizontal: false, vertical: true)
@@ -129,13 +133,13 @@ struct SettingsRow<Trailing: View>: View {
     VStack(alignment: .leading, spacing: 0) {
       HStack(alignment: .center, spacing: 16) {
         VStack(alignment: .leading, spacing: 3) {
-          Text(label)
+          Text(settingsLocalizedString(label))
             .font(.custom("Figtree", size: 14))
             .fontWeight(.semibold)
             .foregroundColor(SettingsStyle.text)
             .fixedSize(horizontal: false, vertical: true)
           if let subtitle {
-            Text(subtitle)
+            Text(settingsLocalizedString(subtitle))
               .font(.custom("Figtree", size: 12))
               .foregroundColor(SettingsStyle.secondary)
               .fixedSize(horizontal: false, vertical: true)
@@ -193,7 +197,7 @@ struct SettingsPrimaryButton: View {
           Image(systemName: systemImage)
             .font(.system(size: 12, weight: .semibold))
         }
-        Text(title)
+        Text(settingsLocalizedString(title))
           .font(.custom("Figtree", size: 13))
           .fontWeight(.semibold)
       }
@@ -224,7 +228,7 @@ struct SettingsSecondaryButton: View {
           Image(systemName: systemImage)
             .font(.system(size: 11, weight: .semibold))
         }
-        Text(title)
+        Text(settingsLocalizedString(title))
           .font(.custom("Figtree", size: 13))
           .fontWeight(.semibold)
       }
@@ -250,7 +254,7 @@ struct SettingsLinkButton: View {
   var body: some View {
     Button(action: action) {
       HStack(spacing: 5) {
-        Text(title)
+        Text(settingsLocalizedString(title))
           .font(.custom("Figtree", size: 13))
           .fontWeight(.semibold)
         if let systemImage {
@@ -306,7 +310,7 @@ struct SettingsStatusDot: View {
       Circle()
         .fill(color)
         .frame(width: 8, height: 8)
-      Text(label)
+      Text(settingsLocalizedString(label))
         .font(.custom("Figtree", size: 13))
         .fontWeight(.semibold)
         .foregroundColor(color)
@@ -348,7 +352,7 @@ struct SettingsBadge: View {
   var isAccent: Bool = false
 
   var body: some View {
-    Text(text)
+    Text(settingsLocalizedString(text))
       .font(.custom("Figtree", size: 10))
       .fontWeight(.bold)
       .kerning(0.6)
@@ -371,7 +375,7 @@ struct SettingsBadge: View {
 struct SettingsMetadata: View {
   let text: String
   var body: some View {
-    Text(text)
+    Text(settingsLocalizedString(text))
       .font(.custom("Figtree", size: 13))
       .foregroundColor(SettingsStyle.secondary)
   }

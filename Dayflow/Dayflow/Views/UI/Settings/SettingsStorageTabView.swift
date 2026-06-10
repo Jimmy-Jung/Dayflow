@@ -18,9 +18,17 @@ struct SettingsStorageTabView: View {
       let option = StorageSettingsViewModel.storageOptions[pending.index]
       let categoryName = pending.category.displayName
       return Alert(
-        title: Text("Lower \(categoryName) limit?"),
+        title: Text(
+          String.localizedStringWithFormat(
+            NSLocalizedString("Lower %@ limit?", comment: ""), categoryName)),
         message: Text(
-          "Reducing the \(categoryName) limit to \(option.label) will immediately delete the oldest \(categoryName) data to stay under the new cap."
+          String.localizedStringWithFormat(
+            NSLocalizedString(
+              "Reducing the %@ limit to %@ will immediately delete the oldest %@ data to stay under the new cap.",
+              comment: ""),
+            categoryName,
+            option.localizedLabel,
+            categoryName)
         ),
         primaryButton: .destructive(Text("Confirm")) {
           viewModel.applyLimit(for: pending.category, index: pending.index)
@@ -70,7 +78,10 @@ struct SettingsStorageTabView: View {
           )
 
           if let last = viewModel.lastStorageCheck {
-            SettingsMetadata(text: "Last checked \(relativeDate(last))")
+            SettingsMetadata(
+              text: String.localizedStringWithFormat(
+                NSLocalizedString("Last checked %@", comment: ""),
+                relativeDate(last)))
           }
         }
         .padding(.top, 18)
@@ -88,7 +99,7 @@ struct SettingsStorageTabView: View {
       VStack(alignment: .leading, spacing: 0) {
         usageRow(
           category: .recordings,
-          label: "Recordings",
+          label: StorageCategory.recordings.displayName,
           size: viewModel.recordingsUsageBytes,
           limitIndex: viewModel.recordingsLimitIndex,
           limitBytes: viewModel.recordingsLimitBytes,
@@ -96,7 +107,7 @@ struct SettingsStorageTabView: View {
         )
         usageRow(
           category: .timelapses,
-          label: "Timelapses",
+          label: StorageCategory.timelapses.displayName,
           size: viewModel.timelapseUsageBytes,
           limitIndex: viewModel.timelapsesLimitIndex,
           limitBytes: viewModel.timelapsesLimitBytes,
@@ -151,13 +162,13 @@ struct SettingsStorageTabView: View {
 
           Menu {
             ForEach(StorageSettingsViewModel.storageOptions) { candidate in
-              Button(candidate.label) {
+              Button(candidate.localizedLabel) {
                 viewModel.handleLimitSelection(for: category, index: candidate.id)
               }
             }
           } label: {
             HStack(spacing: 5) {
-              Text(option.label)
+              Text(option.localizedLabel)
                 .font(.custom("Figtree", size: 13))
                 .fontWeight(.semibold)
               Image(systemName: "chevron.down")

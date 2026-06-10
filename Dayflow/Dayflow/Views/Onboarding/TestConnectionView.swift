@@ -44,7 +44,7 @@ struct TestConnectionView: View {
     guard !isTesting else { return }
 
     guard let apiKey = KeychainManager.shared.retrieve(for: "gemini") else {
-      testResult = .failure("No API key found. Enter your API key first.")
+      testResult = .failure(String(localized: "No API key found. Enter your API key first."))
       onTestComplete?(false)
       AnalyticsService.shared.capture(
         "connection_test_failed", ["provider": "gemini", "error_code": "no_api_key"])
@@ -59,7 +59,7 @@ struct TestConnectionView: View {
       do {
         let _ = try await GeminiAPIHelper.shared.testConnection(apiKey: apiKey)
         await MainActor.run {
-          testResult = .success("Connection successful.")
+          testResult = .success(String(localized: "Connection successful."))
           isTesting = false
           onTestComplete?(true)
         }

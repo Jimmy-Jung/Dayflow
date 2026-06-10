@@ -345,7 +345,7 @@ extension ChatView {
 
             ForEach(Array(welcomePrompts.enumerated()), id: \.offset) { index, prompt in
               WelcomeSuggestionRow(prompt: prompt) {
-                sendMessage(prompt.text)
+                sendMessage(prompt.localizedText)
               }
               .opacity(didAnimateWelcome ? 1 : 0)
               .offset(y: didAnimateWelcome ? 0 : 8)
@@ -552,14 +552,14 @@ extension ChatView {
 
   var chatUnlockButtonTitle: String {
     if !hasChatMinimumAccess {
-      return "Keep recording to unlock"
+      return String(localized: "Keep recording to unlock")
     }
 
     if !anyRuntimeAvailable {
-      return "Configure a runtime to continue"
+      return String(localized: "Configure a runtime to continue")
     }
 
-    return "Unlock Beta"
+    return String(localized: "Unlock Beta")
   }
 
   // MARK: - Input Area
@@ -571,7 +571,7 @@ extension ChatView {
         text: $inputText,
         isFocused: $isInputFocused,
         focusToken: composerFocusToken,
-        placeholder: "Ask about your Dayflow data...",
+        placeholder: String(localized: "Ask about your Dayflow data..."),
         onSubmit: submitCurrentInputIfAllowed
       )
       .frame(height: 50, alignment: .leading)

@@ -5,6 +5,10 @@ import SwiftUI
 struct WelcomePrompt {
   let icon: String
   let text: String
+
+  var localizedText: String {
+    NSLocalizedString(text, comment: "")
+  }
 }
 
 struct WelcomeSuggestionRow: View {
@@ -26,7 +30,7 @@ struct WelcomeSuggestionRow: View {
               .fill(Color(hex: "FFF0E1"))
           )
 
-        Text(prompt.text)
+        Text(prompt.localizedText)
           .font(.custom("Figtree", size: 13).weight(.semibold))
           .foregroundColor(Color(hex: "5C432F"))
           .frame(maxWidth: .infinity, alignment: .leading)

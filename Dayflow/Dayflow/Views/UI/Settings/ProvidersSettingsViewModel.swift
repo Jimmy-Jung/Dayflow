@@ -223,7 +223,9 @@ final class ProvidersSettingsViewModel: ObservableObject {
     LocalModelPreferences.syncPreset(for: engine, modelId: modelId)
     LocalModelPreferences.markUpgradeDismissed(true)
     refreshUpgradeBannerState()
-    upgradeStatusMessage = "Upgraded to \(LocalModelPreset.recommended.displayName)"
+    upgradeStatusMessage = String.localizedStringWithFormat(
+      NSLocalizedString("Upgraded to %@", comment: ""),
+      LocalModelPreset.recommended.displayName)
     AnalyticsService.shared.capture(
       "local_model_upgraded",
       [
@@ -545,7 +547,9 @@ final class ProvidersSettingsViewModel: ObservableObject {
   }
 
   var backupProviderDisplayName: String {
-    guard let backupProvider = secondaryRoutingProviderId else { return "Not configured" }
+    guard let backupProvider = secondaryRoutingProviderId else {
+      return String(localized: "Not configured")
+    }
     return providerDisplayName(backupProvider)
   }
 
@@ -568,14 +572,14 @@ final class ProvidersSettingsViewModel: ObservableObject {
 
   private func openAccountForDayflowPro(_ providerId: String) {
     guard canonicalProviderId(for: providerId) == "dayflow" else { return }
-    upgradeStatusMessage = "Dayflow Pro is required for hosted cards and transcription."
+    upgradeStatusMessage = String(localized: "Dayflow Pro is required for hosted cards and transcription.")
     openAccountForDayflowProvider(providerId)
   }
 
   private func openAccountForDayflowProvider(_ providerId: String) {
     guard canonicalProviderId(for: providerId) == "dayflow" else { return }
     if isDayflowProActive {
-      upgradeStatusMessage = "Manage Dayflow Pro from Account."
+      upgradeStatusMessage = String(localized: "Manage Dayflow Pro from Account.")
     }
     NotificationCenter.default.post(name: .openAccountSettings, object: nil)
     AnalyticsService.shared.capture(
@@ -718,7 +722,7 @@ final class ProvidersSettingsViewModel: ObservableObject {
       CompactProviderInfo(
         id: "dayflow",
         title: "Dayflow Pro",
-        summary: "Hosted cards & transcription • no API keys • requires Pro",
+        summary: String(localized: "Hosted cards & transcription • no API keys • requires Pro"),
         badgeText: "PRO",
         badgeType: .blue,
         icon: "sparkles"
@@ -726,7 +730,7 @@ final class ProvidersSettingsViewModel: ObservableObject {
       CompactProviderInfo(
         id: "claude",
         title: "Claude",
-        summary: "Uses Claude Code through your existing Claude plan",
+        summary: String(localized: "Uses Claude Code through your existing Claude plan"),
         badgeText: "NEW",
         badgeType: .blue,
         icon: "ClaudeLogo"
@@ -734,7 +738,7 @@ final class ProvidersSettingsViewModel: ObservableObject {
       CompactProviderInfo(
         id: "chatgpt",
         title: "ChatGPT",
-        summary: "Uses Codex CLI through your existing ChatGPT plan",
+        summary: String(localized: "Uses Codex CLI through your existing ChatGPT plan"),
         badgeText: "NEW",
         badgeType: .blue,
         icon: "ChatGPTLogo"
@@ -742,7 +746,7 @@ final class ProvidersSettingsViewModel: ObservableObject {
       CompactProviderInfo(
         id: "gemini",
         title: "Gemini",
-        summary: "Gemini free tier • fast & accurate",
+        summary: String(localized: "Gemini free tier • fast & accurate"),
         badgeText: "RECOMMENDED",
         badgeType: .orange,
         icon: "gemini_asset"
@@ -750,7 +754,7 @@ final class ProvidersSettingsViewModel: ObservableObject {
       CompactProviderInfo(
         id: "ollama",
         title: "Local",
-        summary: "Private & offline • 16GB+ RAM • less intelligent",
+        summary: String(localized: "Private & offline • 16GB+ RAM • less intelligent"),
         badgeText: "MOST PRIVATE",
         badgeType: .green,
         icon: "desktopcomputer"
@@ -768,7 +772,7 @@ final class ProvidersSettingsViewModel: ObservableObject {
       switch localEngine {
       case .ollama: engineName = "Ollama"
       case .lmstudio: engineName = "LM Studio"
-      case .custom: engineName = "Custom"
+      case .custom: engineName = String(localized: "Custom")
       }
       let displayModel = localModelId.isEmpty ? "qwen2.5vl:3b" : localModelId
       let truncatedModel =
@@ -778,14 +782,16 @@ final class ProvidersSettingsViewModel: ObservableObject {
       return selectedGeminiModel.displayName
     case "chatgpt_claude":
       if providerId == "chatgpt" {
-        return "ChatGPT – Codex CLI"
+        return String(localized: "ChatGPT – Codex CLI")
       }
       if providerId == "claude" {
-        return "Claude Code CLI"
+        return String(localized: "Claude Code CLI")
       }
       return chatCLIStatusLabel()
     case "dayflow":
-      return isDayflowProActive ? "Dayflow Pro active" : "Requires Dayflow Pro"
+      return isDayflowProActive
+        ? String(localized: "Dayflow Pro active")
+        : String(localized: "Requires Dayflow Pro")
     default:
       return nil
     }
@@ -795,35 +801,35 @@ final class ProvidersSettingsViewModel: ObservableObject {
     let preferredTool = UserDefaults.standard.string(forKey: "chatCLIPreferredTool") ?? ""
     switch preferredTool {
     case "codex":
-      return "ChatGPT – Codex CLI"
+      return String(localized: "ChatGPT – Codex CLI")
     case "claude":
-      return "Claude Code CLI"
+      return String(localized: "Claude Code CLI")
     default:
-      return "Codex or Claude CLI"
+      return String(localized: "Codex or Claude CLI")
     }
   }
 
   var connectionHealthLabel: String {
     switch currentProvider {
     case "gemini":
-      return "Gemini API"
+      return String(localized: "Gemini API")
     case "ollama":
-      return "Local API"
+      return String(localized: "Local API")
     case "chatgpt_claude":
       if let tool = preferredCLITool {
         return "\(tool.shortName) CLI"
       }
-      return "ChatGPT / Claude CLI"
+      return String(localized: "ChatGPT / Claude CLI")
     case "dayflow":
-      return "Dayflow Backend"
+      return String(localized: "Dayflow Backend")
     default:
-      return "Diagnostics"
+      return String(localized: "Diagnostics")
     }
   }
 
   func providerDisplayName(_ id: String) -> String {
     switch id {
-    case "ollama": return "Local"
+    case "ollama": return String(localized: "Local")
     case "gemini": return "Gemini"
     case "chatgpt": return "ChatGPT"
     case "claude": return "Claude"
@@ -831,8 +837,8 @@ final class ProvidersSettingsViewModel: ObservableObject {
       if let preferredCLITool {
         return preferredCLITool == .codex ? "ChatGPT" : "Claude"
       }
-      return "ChatGPT or Claude"
-    case "dayflow": return "Dayflow Pro"
+      return String(localized: "ChatGPT or Claude")
+    case "dayflow": return String(localized: "Dayflow Pro")
     default: return id.capitalized
     }
   }
@@ -1044,11 +1050,11 @@ struct CompactProviderInfo: Identifiable {
 
   var providerTableName: String {
     switch id {
-    case "ollama": return "Local"
+    case "ollama": return String(localized: "Local")
     case "gemini": return "Gemini"
     case "chatgpt": return "ChatGPT"
     case "claude": return "Claude"
-    case "chatgpt_claude": return "ChatGPT / Claude"
+    case "chatgpt_claude": return String(localized: "ChatGPT / Claude")
     default: return title
     }
   }

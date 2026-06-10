@@ -66,7 +66,9 @@ enum LocalModelPreset: String, CaseIterable, Codable {
           "Keep Ollama running in the background",
         ],
         commandTitle: "Run this command:",
-        commandSubtitle: "Downloads \(displayName) for Ollama",
+        commandSubtitle: String.localizedStringWithFormat(
+          NSLocalizedString("Downloads %@ for Ollama", comment: ""),
+          displayName),
         command: ollamaPullCommand,
         buttonTitle: nil,
         buttonURL: nil,
