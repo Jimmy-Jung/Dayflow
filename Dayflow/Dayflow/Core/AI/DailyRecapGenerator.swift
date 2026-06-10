@@ -407,7 +407,7 @@ final class DailyRecapGenerator {
     let prompt = Self.makeLocalPrompt(day: context.sourceDayString, cards: context.cards)
     let (rawText, _) = try await provider.generateText(
       prompt: prompt,
-      model: "gpt-5.5",
+      model: ChatCLIModelDefaults.model(for: .codex, claudeModel: "sonnet"),
       reasoningEffort: nil,
       disableTools: true
     )

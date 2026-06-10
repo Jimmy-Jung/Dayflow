@@ -9,16 +9,8 @@ extension ChatCLIProvider {
   func generateChatStreaming(prompt: String, sessionId: String? = nil) -> AsyncThrowingStream<
     ChatStreamEvent, Error
   > {
-    let model: String
-    let effort: String?
-    switch tool {
-    case .claude:
-      model = "sonnet"
-      effort = nil
-    case .codex:
-      model = "gpt-5.5"
-      effort = "low"
-    }
+    let model = ChatCLIModelDefaults.model(for: tool, claudeModel: "sonnet")
+    let effort = ChatCLIModelDefaults.reasoningEffort(for: tool, codexEffort: "low")
 
     return runner.runStreaming(
       tool: tool,
@@ -63,25 +55,19 @@ extension ChatCLIProvider {
   // MARK: - Text Generation (Non-Streaming)
 
   func generateText(prompt: String) async throws -> (text: String, log: LLMCall) {
-    let model: String
-    switch tool {
-    case .claude:
-      model = "sonnet"
-    case .codex:
-      model = "gpt-5.5"
-    }
+    let model = ChatCLIModelDefaults.model(for: tool, claudeModel: "sonnet")
 
     return try await generateText(
       prompt: prompt,
       model: model,
-      reasoningEffort: "high",
+      reasoningEffort: ChatCLIModelDefaults.reasoningEffort(for: tool, codexEffort: "high"),
       disableTools: false
     )
   }
 
   func generateText(
     prompt: String,
-    model: String,
+    model: String?,
     reasoningEffort: String? = nil,
     disableTools: Bool = true
   ) async throws -> (text: String, log: LLMCall) {

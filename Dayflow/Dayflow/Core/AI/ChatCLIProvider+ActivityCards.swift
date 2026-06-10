@@ -28,16 +28,9 @@ extension ChatCLIProvider {
     let basePrompt = buildCardsPrompt(observations: observations, context: context)
     var actualPromptUsed = basePrompt
 
-    let model: String
-    let effort: String?
-    switch tool {
-    case .claude:
-      model = "sonnet"
-      effort = nil
-    case .codex:
-      model = "gpt-5.5"
-      effort = "low"
-    }
+    let model = ChatCLIModelDefaults.model(for: tool, claudeModel: "sonnet")
+    let effort = ChatCLIModelDefaults.reasoningEffort(for: tool, codexEffort: "low")
+    let analyticsModel = ChatCLIModelDefaults.analyticsModelName(for: tool, model: model)
 
     var lastError: Error?
     var lastRun: ChatCLIRunResult?
@@ -82,7 +75,7 @@ extension ChatCLIProvider {
             operation: "generate_activity_cards",
             validationType: "time_coverage",
             attempt: attempt,
-            model: model,
+            model: analyticsModel,
             batchId: batchId,
             errorDetail: coverageError
           )
@@ -94,7 +87,7 @@ extension ChatCLIProvider {
             operation: "generate_activity_cards",
             validationType: "duration",
             attempt: attempt,
-            model: model,
+            model: analyticsModel,
             batchId: batchId,
             errorDetail: durationError
           )

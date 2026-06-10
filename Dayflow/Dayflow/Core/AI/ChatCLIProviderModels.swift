@@ -8,6 +8,41 @@
 import AppKit
 import Foundation
 
+enum ChatCLIModelDefaults {
+  static let codexAnalyticsModelName = "codex-default"
+
+  static func model(for tool: ChatCLITool, claudeModel: String) -> String? {
+    switch tool {
+    case .codex:
+      return nil
+    case .claude:
+      return claudeModel
+    }
+  }
+
+  static func reasoningEffort(for tool: ChatCLITool, codexEffort: String?) -> String? {
+    switch tool {
+    case .codex:
+      return codexEffort
+    case .claude:
+      return nil
+    }
+  }
+
+  static func analyticsModelName(for tool: ChatCLITool, model: String?) -> String {
+    if let model, !model.isEmpty {
+      return model
+    }
+
+    switch tool {
+    case .codex:
+      return codexAnalyticsModelName
+    case .claude:
+      return "claude-default"
+    }
+  }
+}
+
 struct ChatCLIObservationsEnvelope: Codable {
   struct Item: Codable {
     let start: String

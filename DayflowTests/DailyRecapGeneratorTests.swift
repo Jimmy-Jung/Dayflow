@@ -44,6 +44,20 @@ final class DailyRecapGeneratorTests: XCTestCase {
     XCTAssertEqual(jsonObject["preferred_output_language"] as? String, "Japanese")
   }
 
+  func testCodexChatCLIDefaultDoesNotForceUnsupportedModel() {
+    XCTAssertNil(ChatCLIModelDefaults.model(for: .codex, claudeModel: "sonnet"))
+    XCTAssertEqual(
+      ChatCLIModelDefaults.analyticsModelName(for: .codex, model: nil),
+      "codex-default"
+    )
+    XCTAssertEqual(DailyRecapProvider.chatgpt.modelOrTool, "codex-default")
+  }
+
+  func testClaudeChatCLIDefaultKeepsExistingModelAlias() {
+    XCTAssertEqual(ChatCLIModelDefaults.model(for: .claude, claudeModel: "sonnet"), "sonnet")
+    XCTAssertNil(ChatCLIModelDefaults.reasoningEffort(for: .claude, codexEffort: "low"))
+  }
+
   func testSourceResolverAllowsFridayForMondayWhenWeekendHasNoActivity() throws {
     let mondayStart = try dayStart("2026-06-01")
     let sourceDay = DailyRecapSourceDayResolver.sourceDay(

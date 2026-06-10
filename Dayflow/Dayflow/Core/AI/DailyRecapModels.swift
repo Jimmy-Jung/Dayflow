@@ -82,7 +82,7 @@ enum DailyRecapProvider: String, Codable, CaseIterable, Sendable {
     case .gemini:
       return "Gemini 3.5 Flash"
     case .chatgpt:
-      return "GPT-5.5"
+      return "Codex default"
     case .claude:
       return "Claude Opus"
     case .none:
@@ -99,7 +99,7 @@ enum DailyRecapProvider: String, Codable, CaseIterable, Sendable {
     case .gemini:
       return "Gemini 3.5 Flash"
     case .chatgpt:
-      return "GPT-5.5"
+      return "Uses your Codex CLI default model."
     case .claude:
       return "Claude Opus"
     case .none:
@@ -131,7 +131,7 @@ enum DailyRecapProvider: String, Codable, CaseIterable, Sendable {
     case .gemini:
       return GeminiModel.flash35.rawValue
     case .chatgpt:
-      return "gpt-5.5"
+      return ChatCLIModelDefaults.codexAnalyticsModelName
     case .claude:
       return "opus"
     case .none:

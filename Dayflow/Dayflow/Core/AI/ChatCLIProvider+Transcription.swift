@@ -234,16 +234,8 @@ extension ChatCLIProvider {
       )
     }
 
-    let model: String
-    let effort: String?
-    switch tool {
-    case .claude:
-      model = "haiku"
-      effort = nil
-    case .codex:
-      model = "gpt-5.5-mini"
-      effort = "low"
-    }
+    let model = ChatCLIModelDefaults.model(for: tool, claudeModel: "haiku")
+    let effort = ChatCLIModelDefaults.reasoningEffort(for: tool, codexEffort: "low")
 
     let metadataTimeline = EvidenceTimelineFormatter.timelineText(for: sampledScreenshots)
     let basePrompt = buildScreenshotTranscriptionPrompt(
